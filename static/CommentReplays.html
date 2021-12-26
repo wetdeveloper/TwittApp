@@ -29,7 +29,8 @@
                 {%if current_user.is_authenticated %}
                     {%if CommentReplaysLike.query.filter_by(username=current_user.username).
                     filter_by(comment_replay_id=comrep.id).first() %}
-                    <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3>                    {%else%}
+                    <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3>                    
+                    {%else%}
                     <div id="comment_replay_like_form_{{comrep.id}}" style="display: inline-block;">
                         <form class="comment_replay_like_form" method="post">
                             <input type="hidden" name="twittid" id="twittid" value={{comrep.twittid}}>
