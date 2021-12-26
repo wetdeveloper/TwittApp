@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+    </head>
+    <body>
+        <!-- send messages -->
+            <form action="{{url_for('Direct')}}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name='reciever_username' value="{{reciever_username}}">
+                <button type="submit">send</button><input type="text" name="message">
+            </form>
+            <hr style="color: red;">
+        <!--  -->
+        <!-- messages -->
+            {%for dm in dms%}
+                <p>
+                <span style="red">{{dm.sender}}:</span>
+                {{dm.message}}-----{{dm.datetime}} 
+                {% if dm.unread and dm.sender==current_user.username %}
+                    <span style="color: red;"> not seen</span>
+                {%elif  not(dm.unread) and dm.sender==current_user.username%} 
+                    <span style="color: red;"> seen</span>
+                    
+                {%endif%}
+                </p>
+                <hr>
+            {%endfor%}
+            {{dms}}
+        <!-- end messages -->
+
+        <h3 style="color: red;"> 
+            <span>sender:{{current_user.username}}</span>
+            <br>
+            <span>reciever:{{reciever_username}}</span>
+        </h3>
+
+
+        
+    </body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+        <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" crossorigin="anonymous"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script> 
+        <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/twitt_input_form.js')}}"></script>
+        <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/retwitt_form.js')}}"></script>
+        <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/twitt_like_form.js')}}"></script>
+        <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/comment_input.js')}}"></script>
+        <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/follow_unfollow.js')}}"></script>
+        <link href="{{url_for('static',filename='assets/css/twitts.css')}}" rel="stylesheet">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+    </head>
+    <body>
+        <div class="row">
+            <div class="col-12 col-sm-3 offset-0 offset-sm-4  text-center pt-4  bg-white d-2" id="localtime">
+                {{moment(datetime.datetime.utcnow()).format('LLLL')}}
+            </div>
+            <div class="col-12 offset-0 offset-sm-3 col-sm-2 text-center p-4 bg-light">
+                <div class="text-left">
+                    <!-- Logout&Login  -->
+                        {% if login_message %}
+                            <p>
+                                <span style="color: red;">login message:</span><span>{{login_message}}</span>
+                            </p>
+                        {%endif%}
+                            <h3 style="color: green;">
+                                <a href="{{url_for('Signup')}}">Signup</a>
+                                /
+                                <a href="{{url_for('Login')}}">Login</a>
+                                /
+                                {%if current_user.is_authenticated%}
+                                    <a href="{{url_for('Logout')}}">Logout</a>
+                                {%endif%}
+                            </h3>
+                    <!-- End -->
+                </div>
+            </div>
+        </div>
+        {%if current_user.is_authenticated%}
+        <div class="row">
+            <div class="col-12 w-100 h-100 " >
+                <h2  id="welcome" class="text-center">welcome {{current_user.username}}</h2>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-3 offset-4 h-100 ">
+                <div>
+                    <!-- Profile Picture -->
+                    <img class="rounded-circle " src="{{url_for('static',filename='profile_pictures/user.jpg')}}" width="100%" height="80%"> 
+                    <!-- end -->
+                </div>
+            </div>
+        </div>
+        <div class="row">   
+            <div class="col-9 offset-1 text-center">
+                <!-- following and followed users -->
+                {%if current_user.is_authenticated %}
+                    <div class="mt-4">
+                        <button id="followings_button" class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#myfollowingslistmodal">Following {{following_users_number}}</button>
+                        <button id="followers_button" class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#myfollowerslistmodal">Followers {{followed_users_number}}</button>
+                    </div>
+                {%endif%}
+                <!-- end -->
+                 <!-- Unread Messages -->
+                 {%if current_user.is_authenticated %}
+                    <div class="mt-2">
+                        <div class="text-black d-2">have <span style="color: red;">{{unread_messages_number}}</span> unread messages</div> 
+                        {%for sender_username in unread_messages_senders %}
+                            <a href="{{url_for('Direct',reciever_username=sender_username)}}">
+                                <span style="color: red;">{{sender_username}}</span> <span>{{DirectMessages.query.filter_by(sender=sender_username).filter_by(reciever=current_user.username).filter_by(unread=True).count()}} unread message:)</span>
+                                <i class="glyphicon glyphicon-send color-blue"></i>
+                            </a> 
+                            <br>
+                        {%endfor%}
+                    </div>
+                {%endif%}
+                <!-- end Unread Messages -->
+            </div>
+        </div>
+        {%endif%}
+        {%if current_user.is_authenticated %}
+        <!-- Followings-Follwers Modal -->
+                <!-- Followers Modal -->
+                <div id="myfollowerslistmodal" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <button type="button" class="close" data-bs-dismiss="modal">&times;</button>
+                        <h4 class="modal-title text-center">Followers</h4>
+                        </div>
+                        <div class="modal-body text-center">
+                            {%for follower in followers%}
+                                    <form  class="unfollowing_form" method="post">
+                                        <span>{{follower}}</span>
+                                        <input type="hidden" name="unfollowingtarget" value="{{current_user.username}}">
+                                        <input type="hidden" name="unfollower" value="{{follower}}">
+                                        <button type="submit" class="unfollow_button btn btn-primary ">Remove</button>
+                                    </form>
+                            {%endfor%}
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <!-- end -->
+                <!-- Followings Modal -->
+                <div id="myfollowingslistmodal" class="modal fade" role="dialog">
+                    <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <button type="button" class="close" data-bs-dismiss="modal">&times;</button>
+                        <h4 class="modal-title text-center">Followings</h4>
+                        </div>
+                        <div class="modal-body text-center">
+                            {%for following in followings %}
+                                <form  class="unfollowing_form" method="post">
+                                    <span>{{following}}</span>
+                                    <input type="hidden" name="unfollowingtarget" value="{{following}}">
+                                    <input type="hidden" name="unfollower" value="{{current_user.username}}">
+                                    <button type="submit" class="unfollow_button btn btn-primary">unfollow</button>
+                                </form>
+                            {%endfor%}
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                <!-- end -->
+        <!--end following and followed users  -->
+        {%endif%}
+         
+
+        <!-- Search an User -->
+            <div class="row">
+                <div class="col-12">
+                    <form id="search_form" action="{{url_for('Search')}}" method="get">
+                        <div class="text-center mt-2">
+                            <input type="text" class="rounded p-2" name="searcheduser" id="search_input" placeholder="Enter the Username:))))">
+                            <button class="btn btn-success text-light rounded" type="submit" id="search_button">Search</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        <hr>
+        <!-- End -->
+        
+        <!-- Twitt input -->
+            {%if current_user.is_authenticated %}
+                <div class="row">
+                    <div class="col-12 col-sm-8 offset-sm-2 ">
+                        <form id="twitt_input_form" method="post">
+                            <input type="text" class="p-2" size="50" id="twitt_input"  name='twitt_text' placeholder="Leave your twitt here:)))" id='twitt_text'>
+                            <button type="submit" class="btn btn-success">Twitt</button>
+                        </form>
+                    </div>
+                </div>
+            {%else%}
+                <h3 class="text-center mr-2 text-danger">
+                    for being able to twitt and leave comments and like and .... you should login first.
+                </h3>
+            {%endif%}
+        <!-- end Twitt input -->
+        <!-- Twitts Box -->
+        <hr>
+        {%for twitt in twittslist%}
+                <!-- Twitts -->
+                <div class="row">
+                    <div class="col-12 col-sm-8 offset-sm-2 mt-2">
+                        <p class="twitt-content p-4">
+                            <!-- Direct -->
+                            <a href="{{url_for('Direct',reciever_username=twitt.username)}}">
+                                <i class="glyphicon glyphicon-send color-blue">
+                                </i>
+                            </a> 
+                            <!-- end Direct -->
+                                {{twitt.username}}: {{twitt.twitt}}
+                            </p>
+                    </div>
+                    <div class="col-12 text-center">
+                        <div class="twitts_time" style="background-color:mediumturquoise;color:rgb(117, 13, 114); padding:4px 10px 4px 10px;">{{moment(twitt.dtime).format('LLLL')}}</div>
+                     </div>
+                    <div class="col-12 mt-2 text-center">
+                        <!-- Retwitt button  -->
+                        {%if current_user.is_authenticated%}
+                            <form class="retwitt_form" style="display: inline-block;" method="post">
+                                <!-- <input type="hidden" name='start' id='start' value={{start}}> -->
+                                <input type="hidden" name='twittid' id='twittid' value={{twitt.id}}>
+                                <button type="submit" class=" btn btn-lg btn-success rounded retwitt_form_submit">Retwitt</button>
+                            </form>
+                        {%endif%}
+                         <!-- Comments button-->
+                         <form action="{{url_for('SeeComments',twittid=twitt.id,start=0)}}" style="display: inline-block;" method="GET">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-lg btn-success">Comments</button>
+                        </form>
+                        <!-- End -->
+                        <!-- end Retwitt button  -->
+                        <!-- Twitt Like -->
+                        {%if current_user.is_authenticated %}
+                            {%if TwittLike.query.filter_by(username=current_user.username).filter_by(twittid=twitt.id).first()%}
+                                <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3>
+                            {%else%}
+                                <div id="twitt_like_form_{{twitt.id}}" style="display: inline-block;">
+                                    <form class='twitt_like_form' method="post"> 
+                                        <input type="hidden" name='twittid' id="twittid" value="{{twitt.id}}">
+                                        <button type="submit" class="btn btn-lg twitt_like_form_submit"><i class="glyphicon glyphicon-heart-empty"></i> </button>
+                                    </form>
+                                </div>
+                            {%endif%}
+                            <div style="display: inline-block;">
+                                <span id="twitt_likes_number_{{twitt.id}}">{{TwittLike.query.filter_by(twittid=twitt.id).count()}}</span>
+                            </div>
+                        {%else%}
+                            <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3>
+                            <div style="display: inline-block;">
+                                <span id="twitt_likes_number_{{twitt.id}}">{{TwittLike.query.filter_by(twittid=twitt.id).count()}}</span>
+                            </div>
+                        {%endif%}
+                        <!-- end Twitt Like -->
+                    </div>
+                    <div class="col-7 offset-2 col-sm-12 offset-sm-0 text-sm-center mt-2">
+                         <!-- Comment input -->
+                            {%if current_user.is_authenticated %}
+                                <form class="comment_input_form" method="post">
+                                    <input type="hidden" name='twittid' id='twittid' value="{{twitt.id}}">
+                                    <input type="text"  name='comment' id="comment" required>
+                                    <button type="submit" class=" btn btn-lg btn-success comment_input_form_submit">comment it</button>
+                                </form>
+                            {%endif%}
+                         <!-- end Comments -->
+                    </div>
+                </div>
+                <!-- end Twitts -->
+                    <hr>
+        {%endfor%}
+        
+        <!-- End Twitts Box -->
+
+        <!-- Retwitts -->
+            {%for retwitt in retwittslist%}
+            <div class="row">
+                <div class="col-12 col-sm-8 offset-sm-2 mt-2">
+                        <p class="retwitt-content-box p-4">
+                            <!-- Direct -->
+                            <a href="{{url_for('Direct',reciever_username=retwitt.username)}}">
+                                <i class="glyphicon glyphicon-send color-blue">
+                                </i>
+                            </a> 
+                            <!-- end Direct -->
+                            <!-- retwitt content -->
+                            {{retwitt.username}}:{{Twitts.query.filter_by(id=retwitt.twittid).first().twitt}}
+                            <span style="color: blue;">
+                                retwitted
+                            </span>
+                            <!--retwitt datetime  -->
+                            <!-- end retwitt datetime -->
+                            <!-- end retwitt content -->
+                        </p>
+                </div>
+                <div class="col-12 text-center">
+                    <div class="retwitts_time w-100" style="background-color:mediumturquoise;color:rgb(117, 13, 114); padding:4px 10px 4px 10px;">
+                        {{moment(retwitt.dtime).format('LLLL')}}
+                    </div>
+                </div>
+                <div class="col-12 text-center mt-2">
+                    <!-- Retwitt button  -->
+                    {%if current_user.is_authenticated%}
+                        <form class="retwitt_form" method="post">
+                            <!-- <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/> -->
+                            <!-- <input type="hidden" name='start' value={{start}}> -->
+                            <input type="hidden" name='twittid' id='twittid' value={{retwitt.twittid}}>
+                            <button type="submit"  class="btn btn-lg p-4  btn-success retwitt_form_submit">Retwitt</button>
+                        </form>
+                    {%endif%}
+                    <!-- end Retwitt button  -->
+                </div>
+            </div>
+            <hr>
+            {%endfor%}
+        <!-- end Retwitts -->
+
+        {%if TwittsNumber==0 %}
+            <h3 style="color: red;">not any twitt from your followers</h3>
+
+        {%endif%}
+        <!-- Buttons -->
+        <div class="row">
+            <div class="col-12 text-center">
+                {%if TwittsNumber>0 and start<=ButtonsNum %}
+                    {%if start-Step >= 0 and start>=Step %}
+                        <form action="{{url_for('twitts',start=start-Step)}}" class="pagenumberbutton" method="get">
+                            <button type="submit" class="btn btn-lg btn-success">Previous</button>
+                        </form>
+                    {% elif start-Step<0 and start< Step and start>0 %}
+                        <form action="{{url_for('twitts',start=0)}}" class="pagenumberbutton" method="get">
+                            <button type="submit" class="btn btn-lg btn-success">Previous</button>
+                        </form>
+                    {%endif%}
+                {%endif%}
+                {%if TwittsNumber>0 and start< ButtonsNum and start+Step< ButtonsNum %}
+                    <form action="{{url_for('twitts',start=start+Step)}}" class="pagenumberbutton" method="get">
+                        <button type="submit" class="btn btn-lg btn-success">Next</button>
+                    </form>   
+                {%endif%}
+                {%if TwittsNumber>0 and start+Step < ButtonsNum%}
+                    {%for i in range(start,start+Step)%}
+                        <form action="{{url_for('twitts',start=i)}}" class="pagenumberbutton" method="get">
+                                <button type="submit" class="btn btn-lg btn-warning">{{i}}</button>
+                        </form>
+                    {%endfor%}
+                    <form action="{{url_for('twitts',start=ButtonsNum)}}" class="pagenumberbutton" method="get">
+                        ....<button type="submit" class="btn btn-lg btn-warning">{{ButtonsNum}}</button>
+                    </form>
+                {%elif TwittsNumber>0 and start+Step>=ButtonsNum %}
+                        <!-- %for i in range(start,ButtonsNum)% -->
+                        {%for i in range(start,ButtonsNum)%}
+                            <form action="{{url_for('twitts',start=i)}}" class="pagenumberbutton" method="get">
+                                <button type="submit" class="btn btn-lg btn-warning">{{i}}</button>
+                            </form>
+                        {%endfor%}
+                {%endif%}
+                <hr>
+                <!-- <h3 style="color:red">
+                    start={{start}},
+                    <br>
+                    ButtonsNum={{ButtonsNum}},
+                    <br>
+                    step={{Step}},
+                    <br>
+                    twitts={{twittslist}},
+                    <br>
+                    twitts number={{TwittsNumber}} (Number of twitts and retwitts) <!--Not twitts_perPage or retwitts_perPage number-->
+                    <!-- <br>
+                    retwitts={{retwittslist}}
+                </h3> --> 
+            </div>
+        </div>
+        <!-- End Buttons -->
+
+
+        {% block scripts %}
+        {{ moment.include_moment() }}
+        {% endblock %}
+        </Step> 
+    </body>    
+</html>
