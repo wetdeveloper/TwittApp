@@ -1,2 +1,2 @@
 # Twitter
-an Application you can do like twitt,retwitt,comment,like and ......in Twitter.
+an Application you can do like Tweet,Retweet ,Comment,Like and ......in Twitter.
