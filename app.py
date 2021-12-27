@@ -39,11 +39,6 @@ Session(app)
 moment=Moment(app)
 
 
-# Optimizing twitts functions
-
-
-
-#end Optimizing twitts functions
 
 
 
