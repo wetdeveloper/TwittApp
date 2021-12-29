@@ -1,7 +1,7 @@
 from app import *
 from Model import *
 from tools import MessedTwittList,MessedRetwittList
-
+from Forms import *
 
 
 @login_manager.user_loader
@@ -402,43 +402,48 @@ def Logout():
 
 @app.route('/signup',methods=['POST','GET'])
 def Signup():
-    
+    form=SignupForm()
     if request.method=='POST':
-        username=request.form['username']
-        password=request.form['password']
-        try:
-            user=User(username,password)
-            db.session.add(user)
-            db.session.commit()
-            login_user(user)
-        except BaseException as e:
-            return str(e)
+        if form.validate_on_submit():
+            username=form.username.data
+            password=form.password.data
+            try:
+                user=User(username,password)
+                db.session.add(user)
+                db.session.commit()
+                login_user(user)
+            except BaseException as e:
+                return str(e)
+            else:
+                return redirect(url_for('twitts'))
         else:
-            return redirect(url_for('twitts'))
+            return str(form.errors)
     elif request.method=='GET':
-        return render_template('signup.html')
+        return render_template('signup.html',form=form)
 
         
 
 @app.route('/home/login',methods=['POST','GET'])
 def Login():
+    form=LoginForm()
     if request.method=='POST':
-        username=request.form['username']
-        password=request.form['password']
-        user=User.query.filter_by(username=username).filter_by(password=password).first()
-        if user:
-            login_user(user)
-            return redirect(url_for('twitts'))
-        else:
-            return redirect(url_for('Login',message='No user matches taken username and password. \n try again. '))
-
+        if form.validate_on_submit():
+            username=form.username.data
+            password=form.password.data
+            user=User.query.filter_by(username=username).filter_by(password=password).first()
+            if user:
+                login_user(user)
+                return redirect(url_for('twitts'))
+            else:
+                return redirect(url_for('Login',message='No user matches taken username and password. \n try again. '))
+        return str(form.errors)
     elif request.method=='GET':
         message=''
         if current_user.is_authenticated:
             return redirect(url_for('twitts',login_message="You're already logged in.first logout then try to login via other account"))
         if 'message' in request.args:
             message=request.args['message']
-        return render_template('login.html',message=message)
+        return render_template('login.html',message=message,form=form)
 
 
 @app.route('/home/twitts/direct/<string:reciever_username>',methods=['GET'])
