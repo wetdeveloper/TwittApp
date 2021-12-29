@@ -31,6 +31,8 @@ app.config['RECAPTCHA_OPTIONS'] = {'theme':'white'}
 Bootstrap(app)
 db = SQLAlchemy(app)
 csrf=CSRFProtect(app)
+app.config['SESSION_SQLALCHEMY_TABLE'] = 'sessions'
+app.config['SESSION_SQLALCHEMY'] = db
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///DB.db'
 app.config['SESSION_TYPE'] = 'sqlalchemy'
 @event.listens_for(Engine, "connect")
