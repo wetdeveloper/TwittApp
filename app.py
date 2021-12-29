@@ -11,8 +11,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy import event,create_engine,or_,desc
 from flask_bootstrap import Bootstrap  
 from flask_login import UserMixin
-from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
+# from flask_admin import Admin
+# from flask_admin.contrib.sqla import ModelView
 from flask_moment import Moment 
 
 
@@ -42,7 +42,7 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
        cursor.execute("PRAGMA foreign_keys=ON")
        cursor.close()
 
-admin=Admin(app,name='My App',template_mode='bootstrap3')
+# admin=Admin(app,name='My App',template_mode='bootstrap3')
 engine=create_engine('sqlite:///DB.db')
 Session(app)
 moment=Moment(app)
