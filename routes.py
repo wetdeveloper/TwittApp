@@ -151,25 +151,34 @@ def LikeTwitt():
         twittid=request.form['twittid']
         twitt_likes_number=TwittLike.query.filter_by(twittid=twittid).count()
         print(f'type of twittid is {type(twittid)}')
-        if TwittLike.query.filter_by(username=current_user.username).filter_by(twittid=twittid).first(): #twit's likes number aren't canged
-            return jsonify({
-                'message':"You already liked this twitt-don't try to like a twitt twice","twitt_likes_number":twitt_likes_number,
-                "twittid":twittid
-                }
-                )
-        twitt_like=TwittLike(username, twittid)
-        try:
-            db.session.add(twitt_like)
-            db.session.commit()
-        except BaseException as e:
-            return str(e)
-    return jsonify(
-                    {
-                    "url":url_for('twitts'),'html':'twitts.html'
-                    ,'message':"twitt Liked","twitt_likes_number":twitt_likes_number+1,
-                    "twittid":twittid
-                    }
-                )
+        if TwittLike.query.filter_by(username=current_user.username).filter_by(twittid=twittid).first():
+            twitt_unlike=TwittLike.query.filter_by(username=current_user.username).filter_by(twittid=twittid).first()
+            try:
+                db.session.delete(twitt_unlike)
+                db.session.commit()
+            except BaseException as e:
+                return str(e)
+            else:
+                return jsonify({
+                    'message':"You  unliked this twitt","twitt_likes_number":twitt_likes_number-1,
+                    "twittid":twittid,
+                    'unliked':True,
+                    })
+        else:
+            twitt_like=TwittLike(username, twittid)
+            try:
+                db.session.add(twitt_like)
+                db.session.commit()
+            except BaseException as e:
+                return str(e)
+            else:
+                return jsonify(
+                        {
+                        'message':"twitt Liked","twitt_likes_number":twitt_likes_number+1,
+                        "twittid":twittid,
+                        'unliked':False
+                        }
+                    )
     
 
 
@@ -216,12 +225,20 @@ def LikeComment():
         commentid=request.form['commentid']
         comment_likes_number=CommentLike.query.filter_by(twittid=twittid).filter_by(commentid=commentid).count()
         if CommentLike.query.filter_by(username=current_user.username).filter_by(commentid=commentid).first():
-            return jsonify(
-                {
-                    'message':'U already liked this Comment .dont attempt to like again'
-                    ,'comment_likes_number':comment_likes_number
-                }
-            )
+            commentunlike=CommentLike.query.filter_by(username=current_user.username).filter_by(commentid=commentid).first()
+            try:
+                db.session.delete(commentunlike)
+                db.session.commit()
+            except BaseException as e:
+                return str(e)
+            else:
+                return jsonify(
+                    {
+                        'message':'u unliked this comment!',
+                        'comment_likes_number':comment_likes_number-1,
+                        'unliked':True
+                    }
+                )
         comment_like=CommentLike(twittid,username,commentid)
         try:
             db.session.add(comment_like)
@@ -231,8 +248,9 @@ def LikeComment():
         else:
             return jsonify(
                 {
-                    'message':'comment is liked:)',
-                    'comment_likes_number':comment_likes_number+1
+                    'message':'you liked this comment!',
+                    'comment_likes_number':comment_likes_number+1,
+                    'unliked':False
                 }
             )
         
@@ -286,14 +304,22 @@ def LikeCommentReplays():
     commentid=request.form['commentid']
     comment_replay_likes_number=CommentReplaysLike.query.filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).filter_by(twittid=twittid).count()
     if CommentReplaysLike.query.filter_by(username=current_user.username).filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).first():
-        return jsonify(
-            {
-               "message":"U already liked this replay.don't attempt to like again",
-               "comment_replay_id":comment_replay_id,
-               "comment_replay_likes_number":comment_replay_likes_number
+        unlikecomment=CommentReplaysLike.query.filter_by(username=current_user.username).filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).first()
+        try:
+            db.session.delete(unlikecomment)
+            db.session.commit()
+        except BaseException as e:
+            return str(e)
+        else:
+            return jsonify(
+                {
+                "message":"u unliked this replay.",
+                "comment_replay_id":comment_replay_id,
+                "comment_replay_likes_number":comment_replay_likes_number-1,
+                'unliked':True
 
-            }
-        )
+                }
+            )
     commentreplayslike=CommentReplaysLike(current_user.username,
     twittid,commentid,comment_replay_id)
     try:
@@ -304,9 +330,10 @@ def LikeCommentReplays():
     else:
         return jsonify(
             {
-               "message":"U already liked this replay.don't attempt to like again",
+               "message":"liked this replay",
                "comment_replay_id":comment_replay_id,
-               "comment_replay_likes_number":comment_replay_likes_number+1
+               "comment_replay_likes_number":comment_replay_likes_number+1,
+               'unliked':False
             }
         )
 
@@ -334,16 +361,26 @@ def SeeReplayOnReplays(twittid,id,comment_replay_id,request_from):
 
 @app.route('/home/twitts/see_replay_on_replays/likereplaysonreplay/',methods=['POST'])
 def LikeReplaysOnReplay():
+    comment_replay_id=request.form['comment_replay_id']
+    replaytable=bool(int(request.form['replaytable']))
     replaysonreplaylikesnumber=ReplaysOnReplayLikes.query.filter_by(liked_replay_id=int(request.form['id'])).filter_by(comment_replay_id=
-    request.form['comment_replay_id']).filter_by(replaytable=bool(int(request.form['replaytable']))).count()
+    comment_replay_id).filter_by(replaytable=replaytable).count()
 
-    if ReplaysOnReplayLikes.query.filter_by(username=current_user.username).filter_by(liked_replay_id=int(request.form['id'])).filter_by(comment_replay_id=
-    request.form['comment_replay_id']).filter_by(replaytable=bool(int(request.form['replaytable']))).first():
-        return jsonify({
-            "message":"U already liked this replay.don't attempt to like again",
-            'replaysonreplaylikesnumber':replaysonreplaylikesnumber,
-            'id':request.form['id']
-        })
+    if ReplaysOnReplayLikes.query.filter_by(username=current_user.username).filter_by(liked_replay_id=request.form['id']).filter_by(comment_replay_id=
+    comment_replay_id).filter_by(replaytable=replaytable).first():
+        unlikerp=ReplaysOnReplayLikes.query.filter_by(username=current_user.username).filter_by(liked_replay_id=request.form['id']).filter_by(comment_replay_id=comment_replay_id).filter_by(replaytable=replaytable).first()
+        try:
+            db.session.delete(unlikerp)
+            db.session.commit()
+        except BaseException as e:
+            return str(e)
+        else:
+            return jsonify({
+                "message":"u unliked this replay!",
+                'replaysonreplaylikesnumber':replaysonreplaylikesnumber-1,
+                'id':request.form['id'],
+                'unliked':True
+            })
     
     likereplaysonreplay=ReplaysOnReplayLikes(current_user.username,int(request.form['twittid']),int(request.form['id']),request.form['comment_replay_id'],bool(int(request.form['replaytable'])))
     try:
@@ -353,9 +390,10 @@ def LikeReplaysOnReplay():
         return str(e)
 
     return jsonify({
-            "message":"Liked XD:)",
+            "message":"u liked this replay!",
             'replaysonreplaylikesnumber':replaysonreplaylikesnumber+1,
-            'id':request.form['id']
+            'id':request.form['id'],
+            'unliked':False
         })
     #------------------------------------------
     #id=id is the id of the replay that the liked replay is replayed on
@@ -579,4 +617,3 @@ def Search():
 # admin.add_view(ModelView(CommentReplaysLike,db.session))
 # admin.add_view(ModelView(ReplaysOnReplayLikes,db.session))
 app.run(debug='True')
-
