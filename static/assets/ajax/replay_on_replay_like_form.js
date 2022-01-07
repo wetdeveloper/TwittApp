@@ -1,11 +1,11 @@
 $(document).ready((function(){
     console.log('ajax-replay-on-replay-like-form')
-    $(document.getElementsByClassName("replay_on_replay_like_form")).on('click',function(e){
+    $(document.getElementsByClassName("replay_on_replay_like_form_submit")).on('click',function(e){
     // this=$(document.getElementsByClassName('comment_like_form_submit'))
     e.preventDefault();
     var twittid=$(this).closest('.replay_on_replay_like_form').find("#twittid").val()
-    var liked_replay_id=$(this).closest('.replay_on_replay_like_form').find("#liked_replay_id").val()
-    var id=$(this).closest('.replay_on_replay_like_form').find("#id").val()
+    var liked_replay_id=$(this).closest('.replay_on_replay_like_form').find("#liked_replay_id").val() //id of the replay which we did replay on it.
+    var replayid=$(this).closest('.replay_on_replay_like_form').find("#id").val()
     var comment_replay_id=$(this).closest('.replay_on_replay_like_form').find("#comment_replay_id").val();
     var replaytable=$(this).closest('.replay_on_replay_like_form').find("#replaytable").val();
 
@@ -13,7 +13,7 @@ $(document).ready((function(){
     data={
         twittid:twittid,
         liked_replay_id:liked_replay_id,
-        id:id,
+        id:replayid,
         comment_replay_id:comment_replay_id,
         replaytable:replaytable,
         crossDomain: true,
@@ -24,11 +24,15 @@ $(document).ready((function(){
         data:data,
         success:function(response)
         {
-            console.log(response.message)
             alert(response.message)
-            document.getElementById('replay_on_replay_like_form_'+data.id).innerHTML="<h3 style='color: red;'><i class='glyphicon glyphicon-heart'></i></h3>";
             document.getElementById('replay_on_replay_likes_number_'+data.id).innerHTML=response.replaysonreplaylikesnumber
-            console.log( 'replays on replay likes number='+response.replaysonreplaylikesnumber)
+
+            if(response.unliked==false){
+                $('#replay_on_replay_like_form_'+data.id).find('.replay_on_replay_like_form').find('.replay_on_replay_like_form_submit').html("<h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>")
+            }
+            else if (response.unliked==true){
+                $('#replay_on_replay_like_form_'+data.id).find('.replay_on_replay_like_form_submit').html("<h3><i class='glyphicon glyphicon-heart-empty'></i></h3>")
+            }
         },
         error:function(error){
             console.log('message Error' + JSON.stringify(error));
