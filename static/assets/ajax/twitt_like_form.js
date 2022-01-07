@@ -9,17 +9,21 @@ $(document).ready((function(){
         crossDomain: true,
         },
     $.post({
-
         type:'post',
         url:"/home/twitts/like_twitt/", // when you use ajax external for flask as external file,don't use url_for.it's just ok when you use ajax as internal file
         data:data,
         success:function(response)
         {
-            console.log(response.message)
             alert(response.message)
             document.getElementById('twitt_likes_number_'+data.twittid).innerHTML=response.twitt_likes_number
-            document.getElementById('twitt_like_form_'+data.twittid).innerHTML="<h3 style='color: red;'><i class='glyphicon glyphicon-heart'></i</h3>"
-            console.log( 'twitt likes number='+response.comment_likes_number)
+            if(response.unliked==false){
+                
+                $('#twitt_like_form_'+data.twittid).find('.twitt_like_form').find('.twitt_like_form_submit').html("<h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>")
+            }
+            else if (response.unliked==true){
+                $('#twitt_like_form_'+data.twittid).find('.twitt_like_form').find('.twitt_like_form_submit').html("<h3><i class='glyphicon glyphicon-heart-empty'></i></h3>")
+            }
+            
         },
         error:function(error){
             console.log('message Error' + JSON.stringify(error));
