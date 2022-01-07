@@ -4,7 +4,7 @@ from app import *
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     username = db.Column(db.String(64), unique=True,nullable=False)
-    password= db.Column(db.String(64), unique=True,nullable=False)
+    password= db.Column(db.String(64),nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
     __tablename__='user'
     def __init__(self,username,password):
@@ -404,6 +404,10 @@ db.create_all()
 # Comments.remove()
 # Twitts.remove()
 # User.remove()
+
+
+
+
 
 
 
