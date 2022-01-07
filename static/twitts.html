@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html>
     <head>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
@@ -198,16 +198,19 @@
                         <!-- end Retwitt button  -->
                         <!-- Twitt Like -->
                         {%if current_user.is_authenticated %}
-                            {%if TwittLike.query.filter_by(username=current_user.username).filter_by(twittid=twitt.id).first()%}
-                                <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3>
-                            {%else%}
-                                <div id="twitt_like_form_{{twitt.id}}" style="display: inline-block;">
-                                    <form class='twitt_like_form' method="post"> 
-                                        <input type="hidden" name='twittid' id="twittid" value="{{twitt.id}}">
-                                        <button type="submit" class="btn btn-lg twitt_like_form_submit"><i class="glyphicon glyphicon-heart-empty"></i> </button>
-                                    </form>
-                                </div>
-                            {%endif%}
+                            <!-- <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3> -->
+                            <div id="twitt_like_form_{{twitt.id}}" style="display: inline-block;">
+                                <form class='twitt_like_form' method="post"> 
+                                    <input type="hidden" name='twittid' id="twittid" value="{{twitt.id}}">
+                                    <button type="submit" class="btn btn-lg twitt_like_form_submit">
+                                        {%if TwittLike.query.filter_by(username=current_user.username).filter_by(twittid=twitt.id).first()%}
+                                            <h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>
+                                        {%else%}
+                                            <h3><i class='glyphicon glyphicon-heart-empty'></i></h3>
+                                        {%endif%}
+                                    </button>
+                                </form>
+                            </div>
                             <div style="display: inline-block;">
                                 <span id="twitt_likes_number_{{twitt.id}}">{{TwittLike.query.filter_by(twittid=twitt.id).count()}}</span>
                             </div>
@@ -345,4 +348,3 @@
         </Step> 
     </body>    
 </html>
-
