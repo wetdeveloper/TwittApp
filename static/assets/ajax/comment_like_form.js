@@ -13,12 +13,19 @@ $(document).ready((function(){
     $.post({
         type:'post',
         url:"/home/twitts/like_comment/", 
+        data:data,
         success:function(response)
         {
-            console.log(response.message)
+            alert(response.message)
             document.getElementById('comment_likes_number_'+data.commentid).innerHTML=response.comment_likes_number;
-            document.getElementById('comment_like_form_'+data.commentid).innerHTML="<h3 style='color: red;'><i class='glyphicon glyphicon-heart'></i</h3>"
-            console.log( 'comment likes number='+response.comment_likes_number)
+            if(response.unliked==false){
+                
+                $('#comment_like_form_'+data.commentid).find('.comment_like_form').find('.comment_like_form_submit').html("<h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>")
+
+            }
+            else if (response.unliked==true){
+                $('#comment_like_form_'+data.commentid).find('.comment_like_form').find('.comment_like_form_submit').html("<h3><i class='glyphicon glyphicon-heart-empty'></i></h3>")
+            }
         },
         error:function(error){
             console.log('message Error' + JSON.stringify(error));
