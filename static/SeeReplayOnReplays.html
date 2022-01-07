@@ -26,11 +26,6 @@
                 </p>
                 <!-- replay likes -->
                 {%if current_user.is_authenticated %}
-                        {%if ReplaysOnReplayLikes.query.filter_by(username=current_user.username).
-                        filter_by(liked_replay_id=replay.id).filter_by(comment_replay_id=replay.comment_replay_id).filter_by(replaytable=replay.replaytable).first() %}
-                            <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3>
-
-                        {%else%}
                         <div id="replay_on_replay_like_form_{{replay.id}}" style="display: inline-block;">
                             <form class="replay_on_replay_like_form" method="post">
                                 <input type="hidden" name="twittid" id="twittid" value={{replay.twittid}}>
@@ -42,10 +37,18 @@
                                 {%else%}
                                     <input type="hidden" name='replaytable' id="replaytable" value='1'>
                                 {%endif%}
-                                <button type="submit" class="btn btn-lg"><i class="glyphicon glyphicon-heart-empty"></i> </button>
+                                {%if ReplaysOnReplayLikes.query.filter_by(username=current_user.username).
+                                    filter_by(liked_replay_id=replay.id).filter_by(comment_replay_id=replay.comment_replay_id).filter_by(replaytable=replay.replaytable).first() %}
+                                    <button type="submit" class="replay_on_replay_like_form_submit btn btn-lg">
+                                        <h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>
+                                    </button>
+                                {%else%}
+                                    <button type="submit" class="replay_on_replay_like_form_submit btn btn-lg">
+                                        <h3><i class='glyphicon glyphicon-heart-empty'></i></h3>
+                                    </button>
+                                {%endif%}
                             </form>
                         </div>
-                        {%endif%}
                         <span id="replay_on_replay_likes_number_{{replay.id}}" style="display: inline-block;">
                             {{ReplaysOnReplayLikes.query.filter_by(liked_replay_id=replay.id).count()}}
                         </span>
