@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+DOCTYPE html>
 <html>
     <head>
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
@@ -44,20 +44,22 @@
                             <!-- Comment like -->
                             <div class="col-12 mt-2 text-center">
                                 {%if current_user.is_authenticated %}
-                                    {%if CommentLike.query.filter_by(username=current_user.username).filter_by(twittid=comment.twittid).filter_by(commentid=comment.id).first()%}
-                                    <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3>
-                                     {%else%}
-                                        <div id="comment_like_form_{{comment.id}}" style="display: inline-block;">
-                                            <form class="comment_like_form"  method="post">
-                                                <input type="hidden" name='commentid' id='commentid' value={{comment.id}}>
-                                                <input type="hidden" name='twittid' id='twittid' value={{comment.twittid}}>
-                                                <button type="submit" class="btn btn-lg comment_like_form_submit"><i class="glyphicon glyphicon-heart-empty"></i> </button>
-                                            </form>
-                                        </div>
-                                    {%endif%}
-                                        <div style="display: inline-block;">
-                                            <span id="comment_likes_number_{{comment.id}}">{{CommentLike.query.filter_by(commentid=comment.id).filter_by(twittid=comment.twittid).count()}}</span> 
-                                        </div>
+                                    <div id="comment_like_form_{{comment.id}}" style="display: inline-block;">
+                                        <form class="comment_like_form"  method="post">
+                                            <input type="hidden" name='commentid' id='commentid' value={{comment.id}}>
+                                            <input type="hidden" name='twittid' id='twittid' value={{comment.twittid}}>
+                                            <button type="submit" class="btn btn-lg comment_like_form_submit">
+                                                {%if CommentLike.query.filter_by(username=current_user.username).filter_by(twittid=comment.twittid).filter_by(commentid=comment.id).first()%}
+                                                    <h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>
+                                                {%else%}
+                                                    <h3><i class='glyphicon glyphicon-heart-empty'></i></h3>
+                                                {%endif%}
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <div style="display: inline-block;">
+                                        <span id="comment_likes_number_{{comment.id}}">{{CommentLike.query.filter_by(commentid=comment.id).filter_by(twittid=comment.twittid).count()}}</span> 
+                                    </div>
                                 {%else%}
                                     <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3>
                                     <div style="display: inline-block;">
@@ -146,6 +148,6 @@
         </h3> -->
     <!-- End Buttons -->
 
-    {{commentslist}}
+    <!-- {{commentslist}} -->
     </body>
 </html>
