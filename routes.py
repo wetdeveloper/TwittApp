@@ -445,15 +445,18 @@ def Signup():
         if form.validate_on_submit():
             username=form.username.data
             password=form.password.data
-            try:
-                user=User(username,password)
-                db.session.add(user)
-                db.session.commit()
-                login_user(user)
-            except BaseException as e:
-                return str(e)
-            else:
-                return redirect(url_for('twitts'))
+            user=User.query.filter_by(username=form.username.data).first()
+            if not(user):
+                try:
+                    user=User(username,password)
+                    db.session.add(user)
+                    db.session.commit()
+                    login_user(user)
+                except BaseException as e:
+                    return str(e)
+                else:
+                    return redirect(url_for('twitts'))
+            return "This username is already taken.try another."
         else:
             return str(form.errors)
     elif request.method=='GET':
