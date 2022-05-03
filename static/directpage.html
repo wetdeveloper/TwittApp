@@ -15,7 +15,7 @@
         <!-- messages -->
             {%for dm in dms%}
                 <p>
-                <span style="red">{{dm.sender}}:</span>
+                <span style="color:red">{{dm.sender}}:</span>
                 {{dm.message}}-----{{dm.datetime}} 
                 {% if dm.unread and dm.sender_id==current_user.id %}
                     <span style="color: red;"> not seen</span>
