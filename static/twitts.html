@@ -12,7 +12,7 @@
         <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/retwitt_form.js')}}"></script>
         <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/twitt_like_form.js')}}"></script>
         <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/comment_input.js')}}"></script>
-        <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/follow_unfollow.js')}}"></script>
+        <!-- <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/follow_unfollow.js')}}"></script> -->
         <link href="{{url_for('static',filename='assets/css/twitts.css')}}" rel="stylesheet">
         <meta name="csrf-token" content="{{ csrf_token() }}">
     </head>
@@ -48,89 +48,7 @@
                 <h2  id="welcome" class="text-center">welcome {{current_user.username}}</h2>
             </div>
         </div>
-        <div class="row">   
-            <div class="col-9 offset-1 text-center">
-                <!-- following and followed users -->
-                {%if current_user.is_authenticated %}
-                    <div class="mt-4">
-                        <button id="followings_button" class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#myfollowingslistmodal">Following {{following_users_number}}</button>
-                        <button id="followers_button" class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#myfollowerslistmodal">Followers {{followed_users_number}}</button>
-                    </div>
-                {%endif%}
-                <!-- end -->
-                 <!-- Unread Messages -->
-                 {%if current_user.is_authenticated %}
-                    <div class="mt-2">
-                        <div class="text-black d-2">have <span style="color: red;">{{unread_messages_number}}</span> unread messages</div> 
-                        {%for sender_username in unread_messages_senders %}
-                            <a href="{{url_for('Direct',reciever_username=sender_username)}}">
-                                <span style="color: red;">{{sender_username}}</span> <span>{{DirectMessages.query.filter_by(sender=sender_username).filter_by(reciever=current_user.username).filter_by(unread=True).count()}} unread message:)</span>
-                                <i class="glyphicon glyphicon-send color-blue"></i>
-                            </a> 
-                            <br>
-                        {%endfor%}
-                    </div>
-                {%endif%}
-                <!-- end Unread Messages -->
-            </div>
-        </div>
         {%endif%}
-        {%if current_user.is_authenticated %}
-        <!-- Followings-Follwers Modal -->
-                <!-- Followers Modal -->
-                <div id="myfollowerslistmodal" class="modal fade" role="dialog">
-                    <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                        <button type="button" class="close" data-bs-dismiss="modal">&times;</button>
-                        <h4 class="modal-title text-center">Followers</h4>
-                        </div>
-                        <div class="modal-body text-center">
-                            {%for follower in followers%}
-                                    <form  class="unfollowing_form" method="post">
-                                        <span>{{follower}}</span>
-                                        <input type="hidden" name="unfollowingtarget" value="{{current_user.username}}">
-                                        <input type="hidden" name="unfollower" value="{{follower}}">
-                                        <button type="submit" class="unfollow_button btn btn-primary ">Remove</button>
-                                    </form>
-                            {%endfor%}
-                        </div>
-                        <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-                <!-- end -->
-                <!-- Followings Modal -->
-                <div id="myfollowingslistmodal" class="modal fade" role="dialog">
-                    <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                        <button type="button" class="close" data-bs-dismiss="modal">&times;</button>
-                        <h4 class="modal-title text-center">Followings</h4>
-                        </div>
-                        <div class="modal-body text-center">
-                            {%for following in followings %}
-                                <form  class="unfollowing_form" method="post">
-                                    <span>{{following}}</span>
-                                    <input type="hidden" name="unfollowingtarget" value="{{following}}">
-                                    <input type="hidden" name="unfollower" value="{{current_user.username}}">
-                                    <button type="submit" class="unfollow_button btn btn-primary">unfollow</button>
-                                </form>
-                            {%endfor%}
-                        </div>
-                        <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                    </div>
-                </div>
-                <!-- end -->
-        <!--end following and followed users  -->
-        {%endif%}
-         
-
         <!-- Search an User -->
             <div class="row">
                 <div class="col-12">
@@ -169,12 +87,13 @@
                     <div class="col-12 col-sm-8 offset-sm-2 mt-2">
                         <p class="twitt-content p-4">
                             <!-- Direct -->
-                            <a href="{{url_for('Direct',reciever_username=twitt.username)}}">
+                            <a href="{{url_for('Direct',reciever_id=twitt.userid)}}"> <!--Accessible by request.args-->
+                                <!-- Get inputs in body are accessible by request.form -->
                                 <i class="glyphicon glyphicon-send color-blue">
                                 </i>
                             </a> 
                             <!-- end Direct -->
-                                {{twitt.username}}: {{twitt.twitt}}
+                                {{User.query.filter_by(id=twitt.userid).first().username}}: {{twitt.twitt}}
                             </p>
                     </div>
                     <div class="col-12 text-center">
@@ -203,7 +122,7 @@
                                 <form class='twitt_like_form' method="post"> 
                                     <input type="hidden" name='twittid' id="twittid" value="{{twitt.id}}">
                                     <button type="submit" class="btn btn-lg twitt_like_form_submit">
-                                        {%if TwittLike.query.filter_by(username=current_user.username).filter_by(twittid=twitt.id).first()%}
+                                        {%if TwittLike.query.filter_by(userid=current_user.id).filter_by(twittid=twitt.id).first()%}
                                             <h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>
                                         {%else%}
                                             <h3><i class='glyphicon glyphicon-heart-empty'></i></h3>
@@ -246,7 +165,7 @@
                 <div class="col-12 col-sm-8 offset-sm-2 mt-2">
                         <p class="retwitt-content-box p-4">
                             <!-- Direct -->
-                            <a href="{{url_for('Direct',reciever_username=retwitt.username)}}">
+                            <a href="{{url_for('Direct',reciever_id=retwitt.userid)}}">
                                 <i class="glyphicon glyphicon-send color-blue">
                                 </i>
                             </a> 
