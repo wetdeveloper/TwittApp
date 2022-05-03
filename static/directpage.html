@@ -7,7 +7,7 @@
         <!-- send messages -->
             <form action="{{url_for('Direct')}}" method="post">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name='reciever_username' value="{{reciever_username}}">
+                <input type="hidden" name='reciever_id' value="{{reciever_id}}">
                 <button type="submit">send</button><input type="text" name="message">
             </form>
             <hr style="color: red;">
@@ -17,9 +17,9 @@
                 <p>
                 <span style="red">{{dm.sender}}:</span>
                 {{dm.message}}-----{{dm.datetime}} 
-                {% if dm.unread and dm.sender==current_user.username %}
+                {% if dm.unread and dm.sender_id==current_user.id %}
                     <span style="color: red;"> not seen</span>
-                {%elif  not(dm.unread) and dm.sender==current_user.username%} 
+                {%elif  not(dm.unread) and dm.sender_id==current_user.id%} 
                     <span style="color: red;"> seen</span>
                     
                 {%endif%}
@@ -30,9 +30,9 @@
         <!-- end messages -->
 
         <h3 style="color: red;"> 
-            <span>sender:{{current_user.username}}</span>
+            <span>sender:{{User.query.filter_by(id=current_user.id).first().username}}</span>
             <br>
-            <span>reciever:{{reciever_username}}</span>
+            <span>reciever:{{User.query.filter_by(id=reciever_id).first().username}}</span>
         </h3>
 
 
