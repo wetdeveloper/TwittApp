@@ -33,7 +33,7 @@
                                         </i>
                                     </a> 
                                     <!-- end Direct -->
-                                    {{comment.username}}:{{comment.comment}}
+                                    {{User.query.filter_by(id=comment.userid).first().username}}:{{comment.comment}}
                                 </p>
                             </div>
                             <div class="col-12 bg-primary d-block">
@@ -49,7 +49,7 @@
                                             <input type="hidden" name='commentid' id='commentid' value={{comment.id}}>
                                             <input type="hidden" name='twittid' id='twittid' value={{comment.twittid}}>
                                             <button type="submit" class="btn btn-lg comment_like_form_submit">
-                                                {%if CommentLike.query.filter_by(username=current_user.username).filter_by(twittid=comment.twittid).filter_by(commentid=comment.id).first()%}
+                                                {%if CommentLike.query.filter_by(userid=current_user.id).filter_by(twittid=comment.twittid).filter_by(commentid=comment.id).first()%}
                                                     <h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>
                                                 {%else%}
                                                     <h3><i class='glyphicon glyphicon-heart-empty'></i></h3>
