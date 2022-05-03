@@ -9,7 +9,6 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" crossorigin="anonymous"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
         <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/CSRF-AJAX.js')}}"></script>
-        <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/follow_unfollow.js')}}"></script>
         <link href="{{url_for('static',filename='assets/css/twitts.css')}}" rel="stylesheet">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         
@@ -20,24 +19,10 @@
         <div class="row">
             <div class="text-center mt-4">
                 <h3>
-                    user:{{user.username}}
+                    user:<a href="/userpage/{{user.username}}/">
+                        {{user.username}}
+                    </a>
                 </h3>
-                {%if current_user.is_authenticated%}
-                    {%if Following.query.filter_by(username=current_user.username).filter_by(following_user=user.username).first() %}
-                        <!-- unfollow -->
-                        <form  class="unfollowing_form" method="post">
-                            <input type="hidden" name="unfollowingtarget" value="{{user.username}}">
-                            <input type="hidden" name="unfollower" value="{{current_user.username}}">
-                            <button type="submit" class="unfollow_button btn btn-primary">unfollow</button>
-                        </form>
-                    {%else%}
-                        <!-- Follow -->
-                        <form  class="following_form" method="post">
-                            <input type="hidden" name="followingtarget" value="{{user.username}}">
-                            <button type="submit" class="follow_button btn btn-primary">follow</button>
-                        </form>
-                    {%endif%}
-                {%endif%}
             </div>
         </div>
     </body>
