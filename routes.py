@@ -10,10 +10,42 @@ def load_user(user_id):
 
 
 
+
+@app.route('/userpage/<string:username>/',methods=["GET"])
+@app.route('/userpage/',methods=["GET"])
+def userPage(username=None):
+    if username==None:
+        if "username" in request.args:
+            user=User.query.filter_by(username=request.args["username"]).first()
+        else:
+            return redirect(url_for("twitts"))
+    else:
+        user=User.query.filter_by(username=username).first()
+    if user:
+        twitts=Twitts.query.filter_by(userid=user.id).all()
+        retwitts=[Twitts.query.filter_by(id=retwitt.twittid).first() for retwitt in Retwitts.query.filter_by(userid=user.id).all()]
+        ################## Unread messages notification
+        if current_user.is_authenticated:
+            unread_messages_senders=[dm.sender_id for dm in DirectMessages.query.filter_by(reciever_id=current_user.id).filter_by(unread=True).all()]
+            unread_messages_number=DirectMessages.query.filter_by(reciever_id=current_user.id).filter_by(unread=True).count()
+        else:
+            unread_messages=False
+            unread_messages_senders=False
+            unread_messages_number=False
+        #######################End unread messages notification
+        ####################### followings and followers id
+        following_users_number=len([user.following_userid for user in Following.query.filter_by(userid=user.id).all()]) #users that you followed
+        followed_users_number=len([user.following_userid for user in Following.query.filter_by(following_userid=user.id).all()])#users that  followed you
+        #######################End
+        return render_template("user_page.html",user=user,twitts=twitts,unread_messages_senders=unread_messages_senders,unread_messages_number=unread_messages_number,DirectMessages=DirectMessages,
+        followed_users_number=followed_users_number,following_users_number=following_users_number,TwittLike=TwittLike,len=len,Following=Following,retwitts=retwitts,User=User)
+    else:
+        return "There isn't any user by this username."
+
 @app.route('/home/twitts/twitt_it/',methods=['POST','GET'])
 def TwittIt():
     if request.method=='POST':
-        twitt=Twitts(current_user.username,request.form['twitt_text'])
+        twitt=Twitts(current_user.id,request.form['twitt_text'])
         try:
             db.session.add(twitt)
             db.session.commit()
@@ -30,42 +62,32 @@ def TwittIt():
 @app.route('/home/twitts/<int:start>',methods=['GET'])
 @app.route('/home/twitts/',defaults={'start':0},methods=['GET'])
 def twitts(start):
-    ################## Unread messages notification
-    if current_user.is_authenticated:
-        unread_messages_senders=[dm.sender for dm in DirectMessages.query.filter_by(reciever=current_user.username).filter_by(unread=True).all()]
-        unread_messages_number=DirectMessages.query.filter_by(reciever=current_user.username).filter_by(unread=True).count()
-    else:
-        unread_messages=False
-        unread_messages_senders=False
-        unread_messages_number=False
-        
-    #######################End unread messages notification
     login_message=''
     if 'login_message' in request.args:
         login_message=request.args['login_message']
     start=int(start)
     ##############################TwittsNumber and Twitts List
     if current_user.is_authenticated:
-        following_users=[user.following_user for user in Following.query.filter_by(username=current_user.username).all()]+[current_user.username] #users that you followed them # we add the current_user too cuz we will output the current_user twitts too.
-        followed_users=[user.following_user for user in Following.query.filter_by(following_user=current_user.username).all()]#users that  followed you
+        following_usersid=[user.following_userid for user in Following.query.filter_by(userid=current_user.id).all()]+[current_user.id] #users that you followed them # we add the current_user too cuz we will output the current_user twitts too.
+        followed_usersid=[user.following_userid for user in Following.query.filter_by(following_userid=current_user.id).all()]#users that  followed you
         try:
-            twittslist=MessedTwittList(following_users)
+            twittslist=MessedTwittList(following_usersid)
         except BaseException as e:
             return str(e)
-        retwittslist=MessedRetwittList(following_users)
+        retwittslist=MessedRetwittList(following_usersid)
         TwittsNumber=len(twittslist)+len(retwittslist)
-        following_users.remove(current_user.username) 
+        following_usersid.remove(current_user.id) 
         
-        followers=[follower.username for follower in Following.query.filter_by(following_user=current_user.username).all()]#using for followers list
-        followersfollowed=[follower for follower in followers if Following.query.filter_by(username=current_user.username).filter_by(following_user=follower).first()]#using for followers list
-        followings=[following.following_user for following in Following.query.filter_by(username=current_user.username).all()] #using for followinglist
+        followersid=[follower.userid for follower in Following.query.filter_by(following_userid=current_user.id).all()]#using for followers list
+        followersfollowedid=[followerid for followerid in followersid if Following.query.filter_by(userid=current_user.id).filter_by(following_userid=followerid).first()]#using for followers list
+        followingsid=[following.following_userid for following in Following.query.filter_by(userid=current_user.id).all()] #using for followinglist
     else:
         twittslist=MessedTwittList()
         retwittslist=MessedRetwittList()
         TwittsNumber=len(twittslist)+len(retwittslist)
-        followers=None
-        followersfollowed=None
-        followings=None
+        followersid=None
+        followersfollowedid=None
+        followingsid=None
     ############################# end TwittsNumber and Twitts List
     flag=False
     ButtonsNum=2 
@@ -110,25 +132,26 @@ def twitts(start):
         twittslist=twittslist[start*Twitts_perPage:(start+1)*Twitts_perPage]
         retwittslist=retwittslist[start*Retwitts_perPage:(start+1)*Retwitts_perPage]
     return render_template('twitts.html',twittslist=twittslist,start=start,ButtonsNum=ButtonsNum,login_message=login_message,
-   Step=Step,TwittLike=TwittLike,unread_messages_senders=unread_messages_senders,unread_messages_number=unread_messages_number,DirectMessages=DirectMessages,
-   Twitts_perPage=Twitts_perPage,TwittsNumber=TwittsNumber,following_users_number=len(following_users) if current_user.is_authenticated else None
-   ,followed_users_number=len(followed_users ) if current_user.is_authenticated else None , retwittslist=retwittslist,Twitts=Twitts,abs=abs,datetime=datetime,
-   followings=followings,followersfollowed=followersfollowed,followers=followers)
+   Step=Step,TwittLike=TwittLike,DirectMessages=DirectMessages,
+   Twitts_perPage=Twitts_perPage,TwittsNumber=TwittsNumber,following_users_number=len(following_usersid) if current_user.is_authenticated else None
+   ,followed_users_number=len(followed_usersid ) if current_user.is_authenticated else None , retwittslist=retwittslist,Twitts=Twitts,abs=abs,datetime=datetime,
+   followingsid=followingsid,followersfollowedid=followersfollowedid,followersid=followersid,User=User)
 
 
 
 @app.route("/home/twitts/retwitt/",methods=['POST'])
 def ReTwitt():
-    retwitter_username=current_user.username
+    retwitter_userid=current_user.id
     twittid=request.form['twittid']
-    if (Retwitts.query.filter_by(username=current_user.username)
+    print("function is running..........................")
+    if (Retwitts.query.filter_by(userid=current_user.id)
     .filter_by(twittid=twittid).first()):
         message="You already retwitted this twitt.you can not retwitt a twitt twice. "
         return jsonify({
             'message':message
         }) 
     else:
-        retwitt=Retwitts(retwitter_username,twittid)
+        retwitt=Retwitts(retwitter_userid,twittid)
         try:
             db.session.add(retwitt)
             db.session.commit()
@@ -147,12 +170,12 @@ def ReTwitt():
 @app.route('/home/twitts/like_twitt/',methods=['POST'])
 def LikeTwitt():
     if request.method=='POST':
-        username=current_user.username
+        userid=current_user.id
         twittid=request.form['twittid']
         twitt_likes_number=TwittLike.query.filter_by(twittid=twittid).count()
         print(f'type of twittid is {type(twittid)}')
-        if TwittLike.query.filter_by(username=current_user.username).filter_by(twittid=twittid).first():
-            twitt_unlike=TwittLike.query.filter_by(username=current_user.username).filter_by(twittid=twittid).first()
+        if TwittLike.query.filter_by(userid=current_user.id).filter_by(twittid=twittid).first():
+            twitt_unlike=TwittLike.query.filter_by(userid=current_user.id).filter_by(twittid=twittid).first()
             try:
                 db.session.delete(twitt_unlike)
                 db.session.commit()
@@ -165,7 +188,7 @@ def LikeTwitt():
                     'unliked':True,
                     })
         else:
-            twitt_like=TwittLike(username, twittid)
+            twitt_like=TwittLike(userid, twittid)
             try:
                 db.session.add(twitt_like)
                 db.session.commit()
@@ -214,18 +237,18 @@ def SeeComments(start,twittid):
         commentslist=Comments.query.filter_by(twittid=twittid).all()[start*Comments_perPage:(start+1)*Comments_perPage]
     
     return render_template('comments.html',commentslist=commentslist,start=start,ButtonsNum=ButtonsNum,Step=Step,twittid=twittid,Comments_perPage=Comments_perPage,
-    CommentLike=CommentLike,CommentsNumber=CommentsNumber)
+    CommentLike=CommentLike,CommentsNumber=CommentsNumber,User=User)
 
 
 @app.route('/home/twitts/like_comment/',methods=['POST'])
 def LikeComment():
     if request.method=='POST':
-        username=current_user.username
+        userid=current_user.id
         twittid=request.form['twittid'] 
         commentid=request.form['commentid']
         comment_likes_number=CommentLike.query.filter_by(twittid=twittid).filter_by(commentid=commentid).count()
-        if CommentLike.query.filter_by(username=current_user.username).filter_by(commentid=commentid).first():
-            commentunlike=CommentLike.query.filter_by(username=current_user.username).filter_by(commentid=commentid).first()
+        if CommentLike.query.filter_by(userid=userid).filter_by(commentid=commentid).first():
+            commentunlike=CommentLike.query.filter_by(userid=userid).filter_by(commentid=commentid).first()
             try:
                 db.session.delete(commentunlike)
                 db.session.commit()
@@ -239,7 +262,7 @@ def LikeComment():
                         'unliked':True
                     }
                 )
-        comment_like=CommentLike(twittid,username,commentid)
+        comment_like=CommentLike(twittid,userid,commentid)
         try:
             db.session.add(comment_like)
             db.session.commit()
@@ -258,7 +281,7 @@ def LikeComment():
 
 @app.route('/home/twitts/leave_comments/',methods=['POST'])
 def LeaveComment():
-    comment=Comments(request.form['twittid'],current_user.username,request.form['comment'])
+    comment=Comments(request.form['twittid'],current_user.id,request.form['comment'])
     db.session.add(comment)
     db.session.commit()
     return jsonify(
@@ -274,12 +297,12 @@ def SeeCommentReplays(commentid):
     print(f'commentid={ commentid}')
     commentreplays=CommentReplays.query.filter_by(commentid=commentid).all()
     if commentreplays:
-        return render_template('CommentReplays.html',commentreplays=commentreplays,CommentReplaysLike=CommentReplaysLike,CommentReplayLiked_message=CommentReplayLiked_message)
+        return render_template('CommentReplays.html',commentreplays=commentreplays,CommentReplaysLike=CommentReplaysLike,CommentReplayLiked_message=CommentReplayLiked_message,User=User)
     return 'No replays on this comment'
 
 @app.route('/home/twitts/leave_comment_replay/',methods=['POST'])
 def LeaveCommentReplay():
-    commentreplays=CommentReplays(current_user.username, request.form['twittid'],request.form['commentid'],request.form['replay'])
+    commentreplays=CommentReplays(current_user.id, request.form['twittid'],request.form['commentid'],request.form['replay'])
     try:
         db.session.add(commentreplays)
         db.session.commit()
@@ -303,8 +326,8 @@ def LikeCommentReplays():
     twittid=request.form['twittid']
     commentid=request.form['commentid']
     comment_replay_likes_number=CommentReplaysLike.query.filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).filter_by(twittid=twittid).count()
-    if CommentReplaysLike.query.filter_by(username=current_user.username).filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).first():
-        unlikecomment=CommentReplaysLike.query.filter_by(username=current_user.username).filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).first()
+    if CommentReplaysLike.query.filter_by(userid=current_user.id).filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).first():
+        unlikecomment=CommentReplaysLike.query.filter_by(userid=current_user.id).filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).first()
         try:
             db.session.delete(unlikecomment)
             db.session.commit()
@@ -320,7 +343,7 @@ def LikeCommentReplays():
 
                 }
             )
-    commentreplayslike=CommentReplaysLike(current_user.username,
+    commentreplayslike=CommentReplaysLike(current_user.id,
     twittid,commentid,comment_replay_id)
     try:
         db.session.add(commentreplayslike)
@@ -355,7 +378,7 @@ def SeeReplayOnReplays(twittid,id,comment_replay_id,request_from):
 
 
     if replayonreplays:
-        return render_template('SeeReplayOnReplays.html',replayonreplays=replayonreplays,ReplaysOnReplayLikes=ReplaysOnReplayLikes)
+        return render_template('SeeReplayOnReplays.html',replayonreplays=replayonreplays,ReplaysOnReplayLikes=ReplaysOnReplayLikes,User=User)
     return "No replays!"
 
 
@@ -366,9 +389,9 @@ def LikeReplaysOnReplay():
     replaysonreplaylikesnumber=ReplaysOnReplayLikes.query.filter_by(liked_replay_id=int(request.form['id'])).filter_by(comment_replay_id=
     comment_replay_id).filter_by(replaytable=replaytable).count()
 
-    if ReplaysOnReplayLikes.query.filter_by(username=current_user.username).filter_by(liked_replay_id=request.form['id']).filter_by(comment_replay_id=
+    if ReplaysOnReplayLikes.query.filter_by(userid=current_user.id).filter_by(liked_replay_id=request.form['id']).filter_by(comment_replay_id=
     comment_replay_id).filter_by(replaytable=replaytable).first():
-        unlikerp=ReplaysOnReplayLikes.query.filter_by(username=current_user.username).filter_by(liked_replay_id=request.form['id']).filter_by(comment_replay_id=comment_replay_id).filter_by(replaytable=replaytable).first()
+        unlikerp=ReplaysOnReplayLikes.query.filter_by(userid=current_user.id).filter_by(liked_replay_id=request.form['id']).filter_by(comment_replay_id=comment_replay_id).filter_by(replaytable=replaytable).first()
         try:
             db.session.delete(unlikerp)
             db.session.commit()
@@ -382,7 +405,7 @@ def LikeReplaysOnReplay():
                 'unliked':True
             })
     
-    likereplaysonreplay=ReplaysOnReplayLikes(current_user.username,int(request.form['twittid']),int(request.form['id']),request.form['comment_replay_id'],bool(int(request.form['replaytable'])))
+    likereplaysonreplay=ReplaysOnReplayLikes(current_user.id,int(request.form['twittid']),int(request.form['id']),request.form['comment_replay_id'],bool(int(request.form['replaytable'])))
     try:
         db.session.add(likereplaysonreplay)
         db.session.commit()
@@ -405,13 +428,12 @@ def LikeReplaysOnReplay():
 def Leave_Replay_On_Replays():
     if ReplayOnReplays.query.count()==0:
         Id=2
-    
     else:
         Id=Id=ReplayOnReplays.query.order_by(desc("id")).first().id+1
     if request.form['replaytable']=='1':
-        replayonreplays=ReplayOnReplays(Id,current_user.username,request.form['twittid'],request.form['id'],request.form['comment_replay_id'],True,request.form['replay'])
+        replayonreplays=ReplayOnReplays(Id,current_user.id,request.form['twittid'],request.form['id'],request.form['comment_replay_id'],True,request.form['replay'])
     elif request.form['replaytable']=='0':
-        replayonreplays=ReplayOnReplays(Id,current_user.username,request.form['twittid'],request.form['id'],request.form['comment_replay_id'],False,request.form['replay'])
+        replayonreplays=ReplayOnReplays(Id,current_user.id,request.form['twittid'],request.form['id'],request.form['comment_replay_id'],False,request.form['replay'])
     try:
         db.session.add(replayonreplays)
         db.session.commit()
@@ -487,100 +509,111 @@ def Login():
         return render_template('login.html',message=message,form=form)
 
 
-@app.route('/home/twitts/direct/<string:reciever_username>',methods=['GET'])
-@app.route('/home/twitts/direct',methods=['GET'],defaults={'reciever_username':False})
+@app.route('/home/twitts/direct/<string:reciever_id>',methods=['GET'])
+@app.route('/home/twitts/direct',methods=['GET'],defaults={'reciever_id':False})
 @app.route('/home/twitts/direct',methods=['POST'])
-def Direct(reciever_username=None):
+def Direct(reciever_id=None): #Need to be None to handle Post method otherwise we got positional argument error
     if current_user.is_authenticated:
-        
         if request.method=='POST':
-            reciever_username=request.form['reciever_username']
+            reciever_id=request.form['reciever_id']
             message=request.form['message']
-            dm=DirectMessages(current_user.username, reciever_username, message)
+            dm=DirectMessages(current_user.id, reciever_id, message)
             try:
                 db.session.add(dm)
                 db.session.commit()
             except BaseException as e:
                 return str(e)
             else:
-                return redirect(url_for('Direct',reciever_username=reciever_username))
+                return redirect(url_for('Direct',reciever_id=reciever_id))
         elif request.method=='GET':
-            if reciever_username==False:
-                if 'reciever_username' in request.args:
-                    reciever_username=request.args['reciever_username']
+            if reciever_id==False:
+                if 'reciever_id' in request.args:
+                    reciever_username=request.args['reciever_id']
                 else:
                     return redirect(url_for('twitts'))
-            elif reciever_username==current_user.username:
+            elif reciever_id==current_user.id:
                     return "You not send message to yourself! this option will be able soon."
             ############ set unread=False
-            unread_messages=DirectMessages.query.filter_by(reciever=current_user.username).filter_by(sender=reciever_username).filter_by(unread=True).all()
+            unread_messages=DirectMessages.query.filter_by(reciever_id=current_user.id).filter_by(sender_id=reciever_id).filter_by(unread=True).all()
             for unmsg in unread_messages:
                 unmsg.unread=False
                 db.session.commit()
             ############ end set unread=False
-            dms=DirectMessages.query.filter(or_(DirectMessages.reciever==reciever_username,DirectMessages.reciever==current_user.username)).filter(or_(DirectMessages.sender==reciever_username,DirectMessages.sender==current_user.username)).order_by(desc(DirectMessages.dtime)).all()
-            return render_template('directpage.html',reciever_username=reciever_username,dms=dms)
+            dms=DirectMessages.query.filter(or_(DirectMessages.reciever_id==reciever_id,DirectMessages.reciever_id==current_user.id)).filter(or_(DirectMessages.sender_id==reciever_id,DirectMessages.sender_id==current_user.id)).order_by(desc(DirectMessages.dtime)).all()
+            return render_template('directpage.html',reciever_id=reciever_id,dms=dms,User=User)
     
     return 'You should login first.'
 
 
-@app.route('/home/twitts/followers/',methods=['POST'])
-def Followers():
-    if request.method=='POST':
-        if current_user.is_authenticated:
-            followers=[follower.username for follower in Following.query.filter_by(following_user=current_user.username).all()]
-            followersfollowed=[follower for follower in followers if Following.query.filter_by(username=current_user.username).filter_by(following_user=follower).first()]
-            return jsonify({
-                'followers':followers,
-                'followersfollowed':followersfollowed,
-                'message':'followers list is ready'
-            })
-           
-@app.route('/home/twitts/followings/',methods=['POST'])
-def Followings():
-    if request.method=="POST":
-        if current_user.is_authenticated:
-            followings=[following.following_user for following in Following.query.filter_by(username=current_user.username).all()]
-            return jsonify({
-                'followings':followings,
-                'message':'followings list is ready'
-            })
+@app.route('/userpage/<string:username>/followers/',methods=['GET'])
+def Followers(username=None):
+        user=User.query.filter_by(username=username).first()
+        if user:
+            if username==None:
+                if "username" in request.args:
+                    username=request.args["username"]
+            followers_id=[follower.userid for follower in Following.query.filter_by(following_userid=user.id).all()]
+            followersfollowed_id=[followerid for followerid in followers_id if Following.query.filter_by(following_userid=followerid).filter_by(userid=user.id).first()]
+            followersnotfollowed_id=list(set(followers_id)-set(followersfollowed_id))
+            return render_template("followers_list.html",Following=Following,User=User,user=user,followersfollowed_id=followersfollowed_id,followersnotfollowed_id=followersnotfollowed_id)
+        return "User not found"
+
+@app.route('/user/<string:username>/followings/',methods=['GET'])
+def Followings(username=None):
+        user=User.query.filter_by(username=username).first()
+        if user:
+            if username==None:
+                if "username" in request.args:
+                    username=request.args["username"]
+            followings_id=[following.following_userid for following in Following.query.filter_by(userid=user.id).all()]
+            return render_template("followings_list.html",Following=Following,User=User,user=user,followings_id=followings_id)
+        return "User not found"
+
+
 
 @app.route('/home/twitts/follow/',methods=['POST'])
 def Follow():
     if request.method=='POST':
         if current_user.is_authenticated:
-            followingtarget=request.form['followingtarget']
-            if followingtarget==current_user.username:
+            followingtarget_id=request.form['followingtarget_id']
+            follower_id=request.form['follower_id']
+            if followingtarget_id==current_user.id:
                 return jsonify({
                     'message':'You can not follow yourself'
                 })
-            follow=Following(current_user.username,followingtarget)
-            if Following.query.filter_by(username=current_user.username).filter_by(following_user=followingtarget).first():
+            if Following.query.filter_by(userid=follower_id).filter_by(following_userid=followingtarget_id).first():
                 return jsonify({
                     'message':"you've followed this user before.",
-                    
                 })
             else:
-                try:
-                    db.session.add(follow)
-                    db.session.commit()
-                except BaseException as e:
-                    return jsonify({
-                        'message':f'error:{e}'
-                    })
-                else:
-                    return jsonify({
-                        'message':f"you are following {request.form['followingtarget']} now",
-                    })
+                follow=Following(follower_id,followingtarget_id)
+                if follow:
+                    try:
+                        db.session.add(follow)
+                        db.session.commit()
+                    except BaseException as e:
+                        return jsonify({
+                            'message':f'error:{e}'
+                        })
+                    else:
+                        if "followersOrfollowingsPage" in request.args:
+                            if request.args["followersOrfollowingsPage"]=="Followers":
+                                return redirect(url_for("Followers",userid=current_user.id))
+                            elif request.args["followersOrfollowingsPage"]=="Followings":
+                                return redirect(url_for("Followings",userid=current_user.id))
+                        else:
+                            return redirect(url_for("userPage",username=User.query.filter_by(id=followingtarget_id).first().username))
+                return jsonify({
+                    'message':f'Something Went Wrong'
+                })
 
 @app.route('/home/twitts/unfollow/',methods=['POST'])
 def UnFollow():
     if request.method=='POST':
         if current_user.is_authenticated:
-            unfollowingtarget=request.form['unfollowingtarget']
-            unfollower=request.form['unfollower']
-            unfollow=Following.query.filter_by(username=unfollower).filter_by(following_user=unfollowingtarget).first()
+            unfollowingtarget_id=request.form['unfollowingtarget_id']
+            unfollower_id=request.form['unfollower_id']
+            unfollow=Following.query.filter_by(userid=unfollower_id).filter_by(following_userid=unfollowingtarget_id).first()
             if unfollow:
                 try:
                     db.session.delete(unfollow)
@@ -590,12 +623,16 @@ def UnFollow():
                         'message':f'error:{e}'
                     })
                 else:
-                    return jsonify({
-                        'message':f"you unfollowed user: {unfollowingtarget}",
-                    })
+                    if "followersOrfollowingsPage" in request.args:
+                        if request.args["followersOrfollowingsPage"]=="Followers":
+                            return redirect(url_for("Followers",username=current_user.username))
+                        elif request.args["followersOrfollowingsPage"]=="Followings":
+                            return redirect(url_for("Followings",username=current_user.username))
+                    else:
+                        return redirect(url_for("userPage",username=User.query.filter_by(id=unfollowingtarget_id).first().username))
             else:
                 return jsonify({
-                    'message':f'you unfollowed user:{unfollowingtarget} before'
+                    'message':f'Something Went Wrong'
                 })
 
 
@@ -607,16 +644,17 @@ def Search():
         return "Not found any user"
     return render_template('searched_users.html',user=user,Following=Following)
 
-# admin.add_view(ModelView(User, db.session))
-# admin.add_view(ModelView(Twitts, db.session))
-# admin.add_view(ModelView(Comments,db.session))
-# admin.add_view(ModelView(CommentReplays,db.session))
-# admin.add_view(ModelView(ReplayOnReplays,db.session))
-# admin.add_view(ModelView(TwittLike,db.session))
-# admin.add_view(ModelView(DirectMessages,db.session))
-# admin.add_view(ModelView(CommentLike,db.session))
-# admin.add_view(ModelView(Following,db.session))
-# admin.add_view(ModelView(Retwitts,db.session))
-# admin.add_view(ModelView(CommentReplaysLike,db.session))
-# admin.add_view(ModelView(ReplaysOnReplayLikes,db.session))
+admin.add_view(ModelView(User, db.session))
+admin.add_view(ModelView(Twitts, db.session))
+admin.add_view(ModelView(Comments,db.session))
+admin.add_view(ModelView(CommentReplays,db.session))
+admin.add_view(ModelView(ReplayOnReplays,db.session))
+admin.add_view(ModelView(TwittLike,db.session))
+admin.add_view(ModelView(DirectMessages,db.session))
+admin.add_view(ModelView(CommentLike,db.session))
+admin.add_view(ModelView(Following,db.session))
+admin.add_view(ModelView(Retwitts,db.session))
+admin.add_view(ModelView(CommentReplaysLike,db.session))
+admin.add_view(ModelView(ReplaysOnReplayLikes,db.session))
 app.run(debug='True')
+
