@@ -8,8 +8,8 @@ def MessedTwittList(following_users=None):
         else:
             following_users=following_users
     else:
-        following_users=[user.username for user in User.query.all()]
-    twittslist=[Twitts.query.filter_by(username=fuser).all() for fuser in following_users]#مانند یک ماتریس با این لیست رفتار میکنیم ،ستونهای سطر شامل توییت های یک یوزر است یعنی هر سطر متعلق به یک یوزر است
+        following_users=[user.id for user in User.query.all()]
+    twittslist=[Twitts.query.filter_by(userid=fuser).all() for fuser in following_users]#مانند یک ماتریس با این لیست رفتار میکنیم ،ستونهای سطر شامل توییت های یک یوزر است یعنی هر سطر متعلق به یک یوزر است
     new_twittlist=list()
     while True:
         count=0
@@ -27,15 +27,15 @@ def MessedTwittList(following_users=None):
 
 
 
-def MessedRetwittList(following_users=None):
+def MessedRetwittList(following_usersid=None):
     if current_user.is_authenticated:
-        if not(following_users):
+        if not(following_usersid):
             return AssertionError('Empty following user')
         else:
-            following_users=following_users
+            following_usersid=following_usersid
     else:
-        following_users=[user.username for user in User.query.all()]
-    retwittslist=[Retwitts.query.filter_by(username=fuser).all() for fuser in following_users]#مانند یک ماتریس با این لیست رفتار میکنیم ،ستونهای سطر شامل توییت های یک یوزر است یعنی هر سطر متعلق به یک یوزر است
+        following_usersid=[user.id for user in User.query.all()]
+    retwittslist=[Retwitts.query.filter_by(userid=fuserid).all() for fuserid in following_usersid]#مانند یک ماتریس با این لیست رفتار میکنیم ،ستونهای سطر شامل توییت های یک یوزر است یعنی هر سطر متعلق به یک یوزر است
     new_retwittslist=list()
     while True:
         count=0
