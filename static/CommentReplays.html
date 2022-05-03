@@ -21,7 +21,7 @@
         
         {%for comrep in commentreplays%}
                 <div class="text-center">
-                    {{comrep.username}}:
+                    {{User.query.filter_by(id=comrep.userid).first().username}}:
                     {{comrep.replay}}
                 <br>
                 <!-- Like Comment Replay -->
@@ -34,7 +34,7 @@
                             <input type="hidden" name="comment_replay_id" id="comment_replay_id" value={{comrep.id}}>
                             <input type="hidden" name="replaytable" id="replaytable" value="1">
                             <button type="submit" class="btn btn-lg comment_replay_like_form_submit" value="{{comrep.id}}">
-                                {%if CommentReplaysLike.query.filter_by(username=current_user.username).filter_by(comment_replay_id=comrep.id).first() %}
+                                {%if CommentReplaysLike.query.filter_by(userid=current_user.id).filter_by(comment_replay_id=comrep.id).first() %}
                                     <h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>
                                 {%else%}
                                     <h3><i class='glyphicon glyphicon-heart-empty'></i></h3>
