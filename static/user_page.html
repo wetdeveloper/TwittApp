@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+        <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js" integrity="sha384-7+zCNj/IqJ95wo16oMtfsKbZ9ccEh31eOz1HGyDuCQ6wgnyJNSYdrPa03rtR1zdB" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" integrity="sha384-QJHtvGhmr9XOIpI6YVutG+2QOK9T+ZnN4kzFN1RtK3zEFEIsxhlmWl5/YESvpZ13" crossorigin="anonymous"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script> 
+        <link href="{{url_for('static',filename='/assets/css/userpage.css')}}" rel="stylesheet">
+        <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/twitt_like_form.js')}}"></script>
+        <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/comment_input.js')}}"></script>
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+    </head>
+    <body>
+        <!-- Header -->
+        <div class="row  mt-4 " id="userpage_header">
+            <div class="col-12 col-sm-3 offset-4 text-center ">
+                <h1>
+                    {{user.username}}
+                </h1>
+            </div>
+            <!-- Profile Picture -->
+            <div class="col-12 col-sm-4 text-center mt-4 offset-sm-2">
+                <div>
+                    <img src="{{url_for('static',filename='/assets/profile_pictures/girl1.jpg')}}" class="rounded-circle" width="50%" height="50%">
+                </div>
+            </div>
+            <!-- End -->
+            <!-- Followings and Followers -->
+            <div class="col-12 col-sm-6">
+                <div class="row">
+                    <div class="col-2  mt-2 offset-4 offset-sm-0 h-0 col-sm-2">
+                        <a href="{{url_for('Followers',username=user.username)}}">
+                            <button class=" btn btn-primary btn-lg">followers {{followed_users_number}}</button>
+                        </a>
+                    </div>
+                    <div class="col-2 mt-2  col-sm-2">
+                        <a href="{{url_for('Followings',username=user.username)}}">
+                            <button class=" btn btn-primary btn-lg ">followings{{following_users_number}}</button>
+                        </a>
+                    </div>
+                    <div class="col-12 offset-4 offset-sm-0 mt-2 ">
+                        <!-- Direct -->
+                        <a href="{{url_for('Direct',reciever_id=user.id)}}"> <!--Accessible by request.args-->
+                            <!-- Get inputs in body are accessible by request.form -->
+                            <button class="btn btn-lg w-25 btn-success">Direct</button>
+                            </i>
+                        </a> 
+                        <!-- end Direct -->
+                    </div>
+                    <!-- Unread Messages -->
+                    <div class="col-12">
+                        {%if current_user.is_authenticated %}
+                            <div class="mt-2">
+                                <div class="text-black d-2">have <span style="color: red;">{{unread_messages_number}}</span> unread messages</div> 
+                                {%for sender_id in unread_messages_senders %}
+                                    <a href="{{url_for('Direct',reciever_username=sender_username)}}">
+                                        <span style="color: red;">{{User.query.filter_by(id=sender_id).first().username}}</span> <span>{{DirectMessages.query.filter_by(sender_id=sender_id).filter_by(reciever_id=current_user.id).filter_by(unread=True).count()}} unread message:)</span>
+                                        <i class="glyphicon glyphicon-send color-blue"></i>
+                                    </a> 
+                                    <br>
+                                {%endfor%}
+                            </div>
+                        {%endif%}
+                    </div>
+                    <!-- end Unread Messages -->
+                </div>
+                <!-- Follow-UnFollow(This user) -->
+                    <div class="col-12">
+                        {%if current_user.is_authenticated %}
+                            {%if Following.query.filter_by(userid=current_user.id).filter_by(following_userid=user.id).first()%}
+                                <div class="offset-4 w-25 text-center offset-sm-0">
+                                    {%if current_user.id!=user.id%}
+                                        <form action="{{url_for('UnFollow')}}" method="post">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <input type="hidden" name="unfollower_id" value={{current_user.id}}>
+                                            <input type="hidden" name="unfollowingtarget_id" value={{user.id}}>
+                                            <button type="submit">UnFollow</button>
+                                        </form>
+                                    {%endif%}
+                                </div>
+                            {%else%}
+                                <div class="offset-4 w-25 text-center offset-sm-0">
+                                    {%if current_user.id!=user.id%}
+                                        <form action="{{url_for('Follow')}}" method="post">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <input type="hidden" name="follower_id" value={{current_user.id}}>
+                                            <input type="hidden" name="followingtarget_id" value={{user.id}}>
+                                            <button type="submit">Follow</button>
+                                        </form>
+                                    {%endif%}
+                                </div>
+                            {%endif%}
+                        {%endif%}
+                    </div>
+                <!-- End -->
+            </div>
+            <!-- End -->
+            <!-- Retwitts or Twitts -->
+            <div class="col-12 text-center mt-4">
+                <button class="btn btn-lg btn-success p-4 w-25" id="twitts_button">Twitts</button>
+                <button class="btn btn-lg btn-success p-4 w-25" id="retwitts_button" onclick="showRetwitts">Retwitts</button>
+            </div>
+            <!-- End -->
+        </div>
+        <!-- End Header -->
+        <!-- Twitts Box -->
+        <div class="row" id="twittsbox">
+            {%if len(twitts)!=0 %}
+                {%for twitt in twitts%}
+                    <div class="col-12 col-sm-3 offset-sm-1  bg-light border mt-2 mr-2 p-4  ">
+                        <p>
+                            {{twitt.twitt}}
+                        </p>
+                        <!-- Twitt Likes -->
+                            {%if current_user.is_authenticated %}
+                                <!-- <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3> -->
+                                <div id="twitt_like_form_{{twitt.id}}" style="display: inline-block;">
+                                    <form class='twitt_like_form' method="post"> 
+                                        <input type="hidden" name='twittid' id="twittid" value="{{twitt.id}}">
+                                        <button type="submit" class="btn btn-lg twitt_like_form_submit">
+                                            {%if TwittLike.query.filter_by(userid=current_user.id).filter_by(twittid=twitt.id).first()%}
+                                                <h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>
+                                            {%else%}
+                                                <h3><i class='glyphicon glyphicon-heart-empty'></i></h3>
+                                            {%endif%}
+                                        </button>
+                                    </form>
+                                </div>
+                                <div style="display: inline-block;">
+                                    <span id="twitt_likes_number_{{twitt.id}}">{{TwittLike.query.filter_by(twittid=twitt.id).count()}}</span>
+                                </div>
+                            {%else%}
+                                <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3>
+                                <div style="display: inline-block;">
+                                    <span id="twitt_likes_number_{{twitt.id}}">{{TwittLike.query.filter_by(twittid=twitt.id).count()}}</span>
+                                </div>
+                            {%endif%}
+                        <!-- End -->
+                        <!-- Comments button-->
+                            <form action="{{url_for('SeeComments',twittid=twitt.id,start=0)}}" style="display: inline-block;" method="GET">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-lg btn-success">Comments</button>
+                            </form>
+                        <!-- End -->
+                        <!-- Comment input -->
+                            {%if current_user.is_authenticated %}
+                                <form class="comment_input_form" method="post">
+                                    <input type="hidden" name='twittid' id='twittid' value="{{twitt.id}}">
+                                    <input type="text"  name='comment' id="comment" class="w-75 mt-2"  required>
+                                    <button type="submit" class=" btn btn-lg btn-success comment_input_form_submit mt-2">comment it</button>
+                                </form>
+                            {%endif%}
+                        <!-- end Comments -->
+                    </div>
+                {%endfor%}
+            {%else%}
+                <div class="col-12 bg-secondary text-center mt-4">
+                   <h1 class="text-light">
+                    {{user.username}} Shared Nothing
+                   </h1> 
+                </div>
+            {%endif%}
+        </div>
+        <!-- End -->
+        <!-- Retwitts Box -->
+            <div class="row  w-100" id="retwittsbox">
+                {%if len(retwitts)!=0 %}
+                    {%for retwitt in retwitts%} <!-- retwitt->twitts -->
+                        <div class=" col-12 col-sm-3 offset-sm-1">
+                            <p class="bg-light">
+                                {{retwitt.twitt}}
+                            </p>
+                            <span class="text-primary">Retwitted From</span><span> {{User.query.filter_by(id=retwitt.userid).first().username}}</span>
+                        </div>
+                    {%endfor%}
+                {%else%}
+                    <div class="col-12 bg-secondary text-center mt-4">
+                    <h1 class="text-light">
+                        {{user.username}} Shared Nothing
+                    </h1> 
+                    </div>
+                {%endif%}
+            </div>
+        <!-- End -->
+
+        <!-- Scripts -->
+            <script type="text/javascript">
+                $("#twitts_button").on("click",function(e){
+                    e.preventDefault();
+                    var twittsbox=document.getElementById("twittsbox")
+                    var retwittsbox=document.getElementById("retwittsbox")
+                    retwittsbox.style.visibility="hidden"
+                    twittsbox.style.visibility="visible"
+                    console.log(document.getElementById("twittsbox").style.visibility)
+                });
+
+                $("#retwitts_button").on("click",function(e){
+                    e.preventDefault();
+                    var twittsbox=document.getElementById("twittsbox")
+                    var retwittsbox=document.getElementById("retwittsbox")
+                    twittsbox.style.visibility="hidden"
+                    retwittsbox.style.visibility="visible"
+                    console.log(document.getElementById("twittsbox").style.visibility)
+                });
+            </script>
+        <!-- End -->
+
+    </body>
+</html>
