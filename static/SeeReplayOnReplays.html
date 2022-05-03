@@ -22,7 +22,7 @@
         <div class="row">
             <div class="col-12 text-center mt-2">
                 <p style="color:black;">
-                <span style="color: blue;"><span style="color: rgb(41, 182, 12);">{{replay.username}}</span>:</span> {{replay.replay}}
+                <span style="color: blue;"><span style="color: rgb(41, 182, 12);">{{User.query.filter_by(id=replay.userid).first().username}}</span>:</span> {{replay.replay}}
                 </p>
                 <!-- replay likes -->
                 {%if current_user.is_authenticated %}
@@ -37,7 +37,7 @@
                                 {%else%}
                                     <input type="hidden" name='replaytable' id="replaytable" value='1'>
                                 {%endif%}
-                                {%if ReplaysOnReplayLikes.query.filter_by(username=current_user.username).
+                                {%if ReplaysOnReplayLikes.query.filter_by(userid=current_user.id).
                                     filter_by(liked_replay_id=replay.id).filter_by(comment_replay_id=replay.comment_replay_id).filter_by(replaytable=replay.replaytable).first() %}
                                     <button type="submit" class="replay_on_replay_like_form_submit btn btn-lg">
                                         <h3 style='color:red'><i class='glyphicon glyphicon-heart'></i></h3>
