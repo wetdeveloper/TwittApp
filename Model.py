@@ -25,15 +25,15 @@ class User(UserMixin, db.Model):
 
 class Following(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    username = db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
-    following_user=db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    userid = db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
+    following_userid=db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
-    fk_username=db.relationship('User',foreign_keys=[username])
-    fk_following_user=db.relationship('User',foreign_keys=[following_user])
+    fk_userid=db.relationship('User',foreign_keys=[userid])
+    fk_following_userid=db.relationship('User',foreign_keys=[following_userid])
     __tablename__='following'
-    def __init__(self,username,following_user):
-        self.username=username
-        self.following_user=following_user
+    def __init__(self,userid,following_userid):
+        self.userid=userid
+        self.following_userid=following_userid
 
     @classmethod
     def create(cls):
@@ -52,14 +52,14 @@ class Following(UserMixin, db.Model):
 class Twitts(UserMixin, db.Model):
     __tablename__='twitts'
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    username = db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    userid = db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     twitt=db.Column(db.String(100),nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
-    fk=db.relationship('User',foreign_keys=[username])
+    fk=db.relationship('User',foreign_keys=[userid])
     
    
-    def __init__(self,username,twitt):
-        self.username=username
+    def __init__(self,userid,twitt):
+        self.userid=userid
         self.twitt=twitt
 
     @classmethod
@@ -79,15 +79,15 @@ class Twitts(UserMixin, db.Model):
 class Retwitts(UserMixin, db.Model):
     __tablename__='retwitts'
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    username = db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    userid= db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     twittid=db.Column(db.Integer,db.ForeignKey('twitts.id',ondelete='CASCADE'),nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
-    fk_username=db.relationship('User',foreign_keys=[username])
+    fk_userid=db.relationship('User',foreign_keys=[userid])
     fk_twittid=db.relationship('Twitts',foreign_keys=[twittid])
     
    
-    def __init__(self,username,twittid):
-        self.username=username
+    def __init__(self,userid,twittid):
+        self.userid=userid
         self.twittid=twittid
 
     @classmethod
@@ -107,16 +107,16 @@ class Retwitts(UserMixin, db.Model):
 class Comments(UserMixin, db.Model):
     __tablename__='comments'
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    username = db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    userid = db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     twittid=db.Column(db.Integer,db.ForeignKey('twitts.id',ondelete='CASCADE'),nullable=False)
     comment=db.Column(db.String(100),nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
-    fk_user=db.relationship('User',foreign_keys=[username])
+    fk_userid=db.relationship('User',foreign_keys=[userid])
     fk_twittid=db.relationship('Twitts',foreign_keys=[twittid])
     
    
-    def __init__(self,twittid,username,comment):
-        self.username=username
+    def __init__(self,twittid,userid,comment):
+        self.userid=userid
         self.twittid=twittid
         self.comment=comment
 
@@ -135,17 +135,17 @@ class Comments(UserMixin, db.Model):
 class CommentLike(UserMixin, db.Model):
     __tablename__='commentlike'
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    username = db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    userid = db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     twittid=db.Column(db.Integer,db.ForeignKey('twitts.id',ondelete='CASCADE'),nullable=False)
     commentid=db.Column(db.Integer,db.ForeignKey('comments.id',ondelete='CASCADE'),nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
-    fk_user=db.relationship('User',foreign_keys=[username])
+    fk_userid=db.relationship('User',foreign_keys=[userid])
     fk_twittid=db.relationship('Twitts',foreign_keys=[twittid])
     fk_commentid=db.relationship('Comments',foreign_keys=[commentid])
     
    
-    def __init__(self,twittid,username,commentid):
-        self.username=username
+    def __init__(self,twittid,userid,commentid):
+        self.userid=userid
         self.twittid=twittid
         self.commentid=commentid
 
@@ -168,19 +168,19 @@ class CommentLike(UserMixin, db.Model):
 class CommentReplays(UserMixin, db.Model):
     __tablename__='commentreplays'
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    username = db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    userid = db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     twittid=db.Column(db.Integer,db.ForeignKey('twitts.id',ondelete='CASCADE'),nullable=False)
     commentid=db.Column(db.Integer,db.ForeignKey('comments.id',ondelete='CASCADE'))
     replay=db.Column(db.String(100),nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
-    fk_username=db.relationship('User',foreign_keys=[username])
+    fk_userid=db.relationship('User',foreign_keys=[userid])
     fk_twittid=db.relationship('Twitts',foreign_keys=[twittid])
     fk_commentid=db.relationship('Comments',foreign_keys=[commentid])
 
     
    
-    def __init__(self,username,twittid,commentid,replay):
-        self.username=username
+    def __init__(self,userid,twittid,commentid,replay):
+        self.userid=userid
         self.twittid=twittid
         self.commentid=commentid
         self.replay=replay
@@ -202,20 +202,20 @@ class CommentReplays(UserMixin, db.Model):
 class CommentReplaysLike(UserMixin, db.Model):
     __tablename__='commentreplayslike'
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
-    username = db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    userid = db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     twittid=db.Column(db.Integer,db.ForeignKey('twitts.id',ondelete='CASCADE'),nullable=False)
     commentid=db.Column(db.Integer,db.ForeignKey('comments.id',ondelete='CASCADE'))
     comment_replay_id=db.Column(db.Integer,db.ForeignKey('commentreplays.id',ondelete='CASCADE'))
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
-    fk_username=db.relationship('User',foreign_keys=[username])
+    fk_userid=db.relationship('User',foreign_keys=[userid])
     fk_twittid=db.relationship('Twitts',foreign_keys=[twittid])
     fk_commentid=db.relationship('Comments',foreign_keys=[commentid])
     fk_comment_replay_id=db.relationship('CommentReplays',foreign_keys=[comment_replay_id])
 
     
    
-    def __init__(self,username,twittid,commentid,comment_replay_id):
-        self.username=username
+    def __init__(self,userid,twittid,commentid,comment_replay_id):
+        self.userid=userid
         self.twittid=twittid
         self.commentid=commentid
         self.comment_replay_id=comment_replay_id
@@ -243,18 +243,18 @@ class CommentReplaysLike(UserMixin, db.Model):
 class ReplayOnReplays(UserMixin, db.Model):
     __tablename__='replayonreplays'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    userid = db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     twittid=db.Column(db.Integer,db.ForeignKey('twitts.id',ondelete='CASCADE'),nullable=False)
     replayid=db.Column(db.Integer,nullable=False)#id of replay which is replayed on
     comment_replay_id=db.Column(db.Integer,db.ForeignKey('commentreplays.id',ondelete='CASCADE'),nullable=False)
     replay=db.Column(db.String(100),nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
     replaytable=db.Column('replaytable',db.Boolean,nullable=False,default=True)
-    fk_username=db.relationship('User',foreign_keys=[username])
+    fk_userid=db.relationship('User',foreign_keys=[userid])
     fk_twittid=db.relationship('Twitts',foreign_keys=[twittid])
     fk_comment_replay_id=db.relationship('CommentReplays',foreign_keys=[comment_replay_id])
-    def __init__(self,Id,username,twittid,replayid,comment_replay_id,replaytable,replay):
-        self.username=username
+    def __init__(self,Id,userid,twittid,replayid,comment_replay_id,replaytable,replay):
+        self.userid=userid
         self.twittid=twittid
         self.replayid=replayid
         self.replay=replay
@@ -279,20 +279,20 @@ class ReplayOnReplays(UserMixin, db.Model):
 class ReplaysOnReplayLikes(UserMixin, db.Model):
     __tablename__='replaysonreplaylikes'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    userid = db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     twittid=db.Column(db.Integer,db.ForeignKey('twitts.id',ondelete='CASCADE'),nullable=False)
     liked_replay_id=db.Column(db.Integer,db.ForeignKey('replayonreplays.id',ondelete='CASCADE'),nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
     comment_replay_id=db.Column(db.Integer,db.ForeignKey('commentreplays.id',ondelete='CASCADE'),nullable=False)
     replaytable=db.Column('replaytable',db.Boolean,nullable=False,default=True)
-    fk_username=db.relationship('User',foreign_keys=[username])
+    fk_username=db.relationship('User',foreign_keys=[userid])
     fk_twittid=db.relationship('Twitts',foreign_keys=[twittid])
     fk_liked_replay_id=db.relationship('ReplayOnReplays',foreign_keys=[liked_replay_id])
     fk_comment_replay_id=db.relationship('CommentReplays',foreign_keys=[comment_replay_id])
     
    
-    def __init__(self,username,twittid,liked_replay_id,comment_replay_id,replaytable):
-        self.username=username
+    def __init__(self,userid,twittid,liked_replay_id,comment_replay_id,replaytable):
+        self.userid=userid
         self.twittid=twittid
         self.liked_replay_id=liked_replay_id
         self.comment_replay_id=comment_replay_id #id of the commentreplay that replayonreplay is replayed on it.
@@ -317,16 +317,13 @@ class ReplaysOnReplayLikes(UserMixin, db.Model):
 class TwittLike(UserMixin, db.Model):
     __tablename__='twittlike'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    userid = db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     twittid=db.Column(db.Integer,db.ForeignKey('twitts.id',ondelete='CASCADE'),nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
-    fk_username=db.relationship('User',foreign_keys=[username])
+    fk_userid=db.relationship('User',foreign_keys=[userid])
     fk_twittid=db.relationship('Twitts',foreign_keys=[twittid])
-
-    
-   
-    def __init__(self,username,twittid):
-        self.username=username
+    def __init__(self,userid,twittid):
+        self.userid=userid
         self.twittid=twittid
       
 
@@ -347,19 +344,19 @@ class TwittLike(UserMixin, db.Model):
 class DirectMessages(UserMixin, db.Model):
     __tablename__='directmessages'
     id = db.Column(db.Integer, primary_key=True)
-    sender= db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
-    reciever=db.Column(db.String(64),db.ForeignKey('user.username',ondelete='CASCADE'),nullable=False)
+    sender_id= db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
+    reciever_id=db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
     message=db.Column(db.String(2000),nullable=False)
     unread= db.Column('unread',db.Boolean, default=True,nullable=False)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow)
-    fk_sender=db.relationship('User',foreign_keys=[sender])
-    fk_reciever=db.relationship('User',foreign_keys=[reciever])
+    fk_sender_id=db.relationship('User',foreign_keys=[sender_id])
+    fk_reciever_id=db.relationship('User',foreign_keys=[reciever_id])
 
     
    
-    def __init__(self,sender_username,reciver_username,message):
-        self.sender=sender_username
-        self.reciever=reciver_username
+    def __init__(self,sender_id,reciver_id,message):
+        self.sender_id=sender_id
+        self.reciever_id=reciver_id
         self.message=message
       
 
