@@ -11,6 +11,7 @@
         <link href="{{url_for('static',filename='/assets/css/userpage.css')}}" rel="stylesheet">
         <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/twitt_like_form.js')}}"></script>
         <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/comment_input.js')}}"></script>
+        <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/retwitt_form.js')}}"></script>
         <meta name="csrf-token" content="{{ csrf_token() }}">
     </head>
     <body>
@@ -83,7 +84,7 @@
                                 </div>
                             {%else%}
                                 <div class="offset-4 w-25 text-center offset-sm-0">
-                                    {%if current_user.id!=user.id%}
+                                    {%if current_user.username!=user.username%}
                                         <form action="{{url_for('Follow')}}" method="post">
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                             <input type="hidden" name="follower_id" value={{current_user.id}}>
@@ -110,13 +111,12 @@
         <div class="row" id="twittsbox">
             {%if len(twitts)!=0 %}
                 {%for twitt in twitts%}
-                    <div class="col-12 col-sm-3 offset-sm-1  bg-light border mt-2 mr-2 p-4  ">
+                    <div class="col-12 col-sm-3 offset-sm-1 w-100  bg-light border mt-2 mr-2 p-4  ">
                         <p>
                             {{twitt.twitt}}
                         </p>
                         <!-- Twitt Likes -->
                             {%if current_user.is_authenticated %}
-                                <!-- <h3 style="color: rgb(85, 79, 79);display: inline-block;color: red;"><i class="glyphicon glyphicon-heart"></i> </h3> -->
                                 <div id="twitt_like_form_{{twitt.id}}" style="display: inline-block;">
                                     <form class='twitt_like_form' method="post"> 
                                         <input type="hidden" name='twittid' id="twittid" value="{{twitt.id}}">
@@ -154,6 +154,16 @@
                                 </form>
                             {%endif%}
                         <!-- end Comments -->
+                        <!-- Retwitt button  -->
+                        {%if current_user.is_authenticated%}
+                            <form class="retwitt_form" method="post">
+                                <!-- <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/> -->
+                                <!-- <input type="hidden" name='start' value={{start}}> -->
+                                <input type="hidden" name='twittid' id='twittid' value={{twitt.id}}>
+                                <button type="submit"  class="btn btn-lg p-4  btn-success retwitt_form_submit">Retwitt</button>
+                            </form>
+                        {%endif%}
+                <!-- end Retwitt button  -->
                     </div>
                 {%endfor%}
             {%else%}
@@ -175,6 +185,18 @@
                             </p>
                             <span class="text-primary">Retwitted From</span><span> {{User.query.filter_by(id=retwitt.userid).first().username}}</span>
                         </div>
+                        <!-- Retwitt button -->
+                            {%if current_user.is_authenticated%}
+                            {%if current_user.is_authenticated%}
+                            <form class="retwitt_form" method="post">
+                                <!-- <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/> -->
+                                <!-- <input type="hidden" name='start' value={{start}}> -->
+                                <input type="hidden" name='twittid' id='twittid' value={{retwitt.id}}><!-- in this case retwitt.id results id of the twitts which is retwitted-->
+                                <button type="submit"  class="btn btn-lg p-4  btn-success retwitt_form_submit">Retwitt</button>
+                            </form>
+                        {%endif%}
+                            {%endif%}
+                        <!-- End -->
                     {%endfor%}
                 {%else%}
                     <div class="col-12 bg-secondary text-center mt-4">
