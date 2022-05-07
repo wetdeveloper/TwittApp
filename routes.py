@@ -657,4 +657,3 @@ admin.add_view(ModelView(Retwitts,db.session))
 admin.add_view(ModelView(CommentReplaysLike,db.session))
 admin.add_view(ModelView(ReplaysOnReplayLikes,db.session))
 app.run(debug='True')
-
