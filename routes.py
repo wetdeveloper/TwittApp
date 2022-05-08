@@ -202,6 +202,34 @@ def LikeTwitt():
                         'unliked':False
                         }
                     )
+
+@app.route("/home/twitts/twitt/<int:twittid>/likers/<string:username>/",methods=["GET"])
+@app.route("/userpage/twitt/<int:twittid>/likers/<string:username>/",methods=["GET"])
+def TwittLikers(twittid=None,username=None):
+        if "twittid" in request.args and "username" in request.args:
+            twittid=request.args("twittid")
+            username=request.args("username")
+        elif twittid==None or username==None:
+            return jsonify({
+                "message":"twittid or username is empty"
+            })
+        user=User.query.filter_by(username=username).first()
+        twitt=Twitts.query.filter_by(id=twittid).first()
+        if not(user):
+            return jsonify({
+                "message":"User is not found by this username"
+            })
+        if not(twitt):
+            return jsonify({
+                "message":"User and Twitt is not matched"
+            })
+        TwLikers=TwittLike.query.filter_by(twittid=twitt.id).all()
+        if TwLikers:
+            TwLikers=[User.query.filter_by(id=twliker.userid).first() for twliker in TwLikers]
+        return render_template("TwittLikers.html",TwLikers=TwLikers)
+        
+        
+
     
 
 
@@ -510,7 +538,7 @@ def Login():
 
 
 @app.route('/home/twitts/direct/<string:reciever_id>',methods=['GET'])
-@app.route('/home/twitts/direct',methods=['GET'],defaults={'reciever_id':False})
+@app.route('/home/twitts/direct',methods=['GET'],defaults={'reciever_id':None})
 @app.route('/home/twitts/direct',methods=['POST'])
 def Direct(reciever_id=None): #Need to be None to handle Post method otherwise we got positional argument error
     if current_user.is_authenticated:
@@ -526,20 +554,25 @@ def Direct(reciever_id=None): #Need to be None to handle Post method otherwise w
             else:
                 return redirect(url_for('Direct',reciever_id=reciever_id))
         elif request.method=='GET':
-            if reciever_id==False:
+            if reciever_id==None:
                 if 'reciever_id' in request.args:
                     reciever_username=request.args['reciever_id']
                 else:
                     return redirect(url_for('twitts'))
             elif reciever_id==current_user.id:
-                    return "You not send message to yourself! this option will be able soon."
+                    return "You  can not send message to yourself! this option will be able soon."
             ############ set unread=False
             unread_messages=DirectMessages.query.filter_by(reciever_id=current_user.id).filter_by(sender_id=reciever_id).filter_by(unread=True).all()
             for unmsg in unread_messages:
                 unmsg.unread=False
                 db.session.commit()
             ############ end set unread=False
-            dms=DirectMessages.query.filter(or_(DirectMessages.reciever_id==reciever_id,DirectMessages.reciever_id==current_user.id)).filter(or_(DirectMessages.sender_id==reciever_id,DirectMessages.sender_id==current_user.id)).order_by(desc(DirectMessages.dtime)).all()
+            # dms=DirectMessages.query.filter(or_(DirectMessages.reciever_id==reciever_id,DirectMessages.reciever_id==current_user.id)).filter(or_(DirectMessages.sender_id==reciever_id,DirectMessages.sender_id==current_user.id)).order_by(desc(DirectMessages.dtime)).all()
+            if int(reciever_id)!=current_user.id:
+                dms=DirectMessages.query.filter_by(reciever_id=reciever_id).filter_by(sender_id=current_user.id).all()+DirectMessages.query.filter_by(reciever_id=current_user.id).filter_by(sender_id=reciever_id).all()
+            else:
+                dms=DirectMessages.query.filter_by(reciever_id=reciever_id).filter_by(sender_id=current_user.id).all()
+            dms=sorted(dms,key=lambda x:x.dtime)
             return render_template('directpage.html',reciever_id=reciever_id,dms=dms,User=User)
     
     return 'You should login first.'
