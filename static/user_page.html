@@ -139,6 +139,15 @@
                                 </div>
                             {%endif%}
                         <!-- End -->
+                        <!-- Twitt Likers -->
+                            <a href="{{url_for('TwittLikers',twittid=twitt.id,username=user.username)}}">
+                                <button>
+                                    Likers
+                                </button>
+                            </a>
+
+
+                        <!-- End -->
                         <!-- Comments button-->
                             <form action="{{url_for('SeeComments',twittid=twitt.id,start=0)}}" style="display: inline-block;" method="GET">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -183,7 +192,10 @@
                             <p class="bg-light">
                                 {{retwitt.twitt}}
                             </p>
-                            <span class="text-primary">Retwitted From</span><span> {{User.query.filter_by(id=retwitt.userid).first().username}}</span>
+                            <span class="text-primary">Retwitted From</span>
+                            <a href="{{url_for('userPage',username=User.query.filter_by(id=retwitt.userid).first().username)}}">
+                                {{User.query.filter_by(id=retwitt.userid).first().username}}
+                            </a>
                         </div>
                         <!-- Retwitt button -->
                             {%if current_user.is_authenticated%}
