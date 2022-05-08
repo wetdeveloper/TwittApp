@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
     <head>
-
     </head>
     <body>
         <!-- send messages -->
@@ -15,8 +14,8 @@
         <!-- messages -->
             {%for dm in dms%}
                 <p>
-                <span style="color:red">{{dm.sender}}:</span>
-                {{dm.message}}-----{{dm.datetime}} 
+                <span style="color:blue">{{User.query.filter_by(id=dm.sender_id).first().username}}:</span>
+                {{dm.message}}-----{{dm.dtime}} 
                 {% if dm.unread and dm.sender_id==current_user.id %}
                     <span style="color: red;"> not seen</span>
                 {%elif  not(dm.unread) and dm.sender_id==current_user.id%} 
@@ -33,9 +32,6 @@
             <span>sender:{{User.query.filter_by(id=current_user.id).first().username}}</span>
             <br>
             <span>reciever:{{User.query.filter_by(id=reciever_id).first().username}}</span>
-        </h3>
-
-
-        
+        </h3>        
     </body>
 </html>
