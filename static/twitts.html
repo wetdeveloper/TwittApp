@@ -93,8 +93,13 @@
                                 </i>
                             </a> 
                             <!-- end Direct -->
-                                {{User.query.filter_by(id=twitt.userid).first().username}}: {{twitt.twitt}}
-                            </p>
+                            <!-- Twitt content + Profile Picture -->
+                                <a href="{{url_for('userPage',username=User.query.filter_by(id=twitt.userid).first().username)}}">
+                                    <img src="{{url_for('static',filename='/assets/profile_pictures/girl1.jpg')}}" class="rounded-circle" width="7%" height="7%"> {{User.query.filter_by(id=twitt.userid).first().username}}
+                                </a>
+                                : {{twitt.twitt}}
+                            <!-- End -->
+                        </p>
                     </div>
                     <div class="col-12 text-center">
                         <div class="twitts_time" style="background-color:mediumturquoise;color:rgb(117, 13, 114); padding:4px 10px 4px 10px;">{{moment(twitt.dtime).format('LLLL')}}</div>
@@ -170,21 +175,25 @@
                                 </i>
                             </a> 
                             <!-- end Direct -->
-                            <!-- retwitt content -->
+                            <!-- ReTwitt content + Profile Picture -->
+                            <a href="{{url_for('userPage',username=User.query.filter_by(id=retwitt.userid).first().username)}}">
+                                <img src="{{url_for('static',filename='/assets/profile_pictures/girl1.jpg')}}" class="rounded-circle" width="7%" height="7%"> {{User.query.filter_by(id=retwitt.userid).first().username}}
+                            </a>
                             {{retwitt.username}}:{{Twitts.query.filter_by(id=retwitt.twittid).first().twitt}}
-                            <span style="color: blue;">
-                                retwitted
-                            </span>
-                            <!--retwitt datetime  -->
-                            <!-- end retwitt datetime -->
+                            <span class="text-primary">Retwitted From</span>
+                            <a href="{{url_for('userPage',username=User.query.filter_by(id=retwitt.userid).first().username)}}">
+                                {{User.query.filter_by(id=retwitt.userid).first().username}}
+                            </a>
                             <!-- end retwitt content -->
                         </p>
                 </div>
-                <div class="col-12 text-center">
-                    <div class="retwitts_time w-100" style="background-color:mediumturquoise;color:rgb(117, 13, 114); padding:4px 10px 4px 10px;">
-                        {{moment(retwitt.dtime).format('LLLL')}}
+                    <!-- retwitt datetime -->
+                    <div class="col-12 text-center">
+                        <div class="retwitts_time w-100" style="background-color:mediumturquoise;color:rgb(117, 13, 114); padding:4px 10px 4px 10px;">
+                            {{moment(retwitt.dtime).format('LLLL')}}
+                        </div>
                     </div>
-                </div>
+                    <!-- End -->
                 <div class="col-12 text-center mt-2">
                     <!-- Retwitt button  -->
                     {%if current_user.is_authenticated%}
