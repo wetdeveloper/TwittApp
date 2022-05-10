@@ -12,16 +12,18 @@
     <body>
         <div class="container text-center">
             <!-- Likers -->
+            {%block Likers%}
                 {%for twliker in TwLikers%}
                     <div class="mt-4">
                         <a href="{{url_for('userPage',username=twliker.username)}}">
-                            <img src="{{url_for('static',filename='/assets/profile_pictures/girl1.jpg')}}" class="rounded" width="10%" height="10%">
+                            <img src="{{url_for('static',filename='/assets/profile_pictures/girl1.jpg')}}" class="rounded-circle" width="10%" height="10%">
                             <button class=" btn btn-lg btn-primary">
                                 {{twliker.username}}
                             </button>
                         </a>
                     </div>
                 {%endfor%}
+            {%endblock Likers%}
             <!-- End -->
         </div>
     </body>
