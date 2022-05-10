@@ -1,0 +1,13 @@
+{% extends "TwittLikers.html" %}
+{%block Likers%}
+    {%for comliker in ComLikers%}
+    <div class="mt-4">
+        <a href="{{url_for('userPage',username=comliker.username)}}">
+            <img src="{{url_for('static',filename='/assets/profile_pictures/girl1.jpg')}}" class="rounded-circle" width="10%" height="10%">
+            <button class=" btn btn-lg btn-primary">
+                {{comliker.username}}
+            </button>
+        </a>
+    </div>
+    {%endfor%}
+{%endblock Likers%}
