@@ -68,7 +68,15 @@
                                 {%endif%}
                             </div>
                             <!-- end Comment Like -->
-
+                            <!-- Comment Likers -->
+                            <div class="col-12 text-center mb-4">
+                                <a href="{{url_for('CommentLikers',commentid=comment.id,twittid=comment.twittid)}}">
+                                    <button class="btn btn-lg btn-primary">
+                                        Likers
+                                    </button>
+                                </a>
+                            </div>
+                            <!-- End -->
                             <!-- See Replays on this comment -->
                             <div class="col-12 text-center">
                                 <form action="{{url_for('SeeCommentReplays',commentid=comment.id)}}" method="get">
@@ -88,8 +96,8 @@
                                     </form>
                                 </div>
                             {%endif%}
-                                
                             <!-- End -->
+                            
                         <hr>
                         </div>
                 {%endfor%}
