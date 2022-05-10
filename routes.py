@@ -206,27 +206,30 @@ def LikeTwitt():
 @app.route("/home/twitts/twitt/<int:twittid>/likers/<string:username>/",methods=["GET"])
 @app.route("/userpage/twitt/<int:twittid>/likers/<string:username>/",methods=["GET"])
 def TwittLikers(twittid=None,username=None):
-        if "twittid" in request.args and "username" in request.args:
-            twittid=request.args("twittid")
-            username=request.args("username")
-        elif twittid==None or username==None:
-            return jsonify({
-                "message":"twittid or username is empty"
-            })
-        user=User.query.filter_by(username=username).first()
-        twitt=Twitts.query.filter_by(id=twittid).first()
-        if not(user):
-            return jsonify({
-                "message":"User is not found by this username"
-            })
-        if not(twitt):
-            return jsonify({
-                "message":"User and Twitt is not matched"
-            })
-        TwLikers=TwittLike.query.filter_by(twittid=twitt.id).all()
-        if TwLikers:
-            TwLikers=[User.query.filter_by(id=twliker.userid).first() for twliker in TwLikers]
+    if "twittid" in request.args and "username" in request.args:
+        twittid=request.args("twittid")
+        username=request.args("username")
+    elif twittid==None or username==None:
+        return jsonify({
+            "message":"twittid or username is empty"
+        })
+    user=User.query.filter_by(username=username).first()
+    twitt=Twitts.query.filter_by(id=twittid).first()
+    if not(user):
+        return jsonify({
+            "message":"User is not found by this username"
+        })
+    if not(twitt):
+        return jsonify({
+            "message":"User and Twitt is not matched"
+        })
+    TwLikers=TwittLike.query.filter_by(twittid=twitt.id).all()
+    if TwLikers:
+        TwLikers=[User.query.filter_by(id=twliker.userid).first() for twliker in TwLikers]
         return render_template("TwittLikers.html",TwLikers=TwLikers)
+    return jsonify({
+        "message":"No one Liked this Twitt yet"
+    })
         
         
 
@@ -304,7 +307,40 @@ def LikeComment():
                     'unliked':False
                 }
             )
+
+
+@app.route('/home/twitts/see_comments/Likers/<int:twittid>/<int:commentid>',methods=['GET'])
+def CommentLikers(twittid=None,commentid=None):
+    if "twittid" in request.args and "commentid" in request.args:
+            twittid=request.args("twittid")
+            commentid=request.args("commentid")
+    elif twittid==None or commentid==None:
+        return jsonify({
+            "message":"twittid or commentid is missed."
+        })
+    twitt=Twitts.query.filter_by(id=twittid).first()
+    user=User.query.filter_by(id=twitt.userid).first()
+    comment=Comments.query.filter_by(id=commentid).first()
+    if not(user):
+        return jsonify({
+            "message":"User is not found"
+        })
+    if not(twitt):
+        return jsonify({
+            "message":"Twitt is not found"
+        })
+    if not(comment):
+        return jsonify({
+            "message":"Comment  is not found"
+        })
         
+    ComLikers=CommentLike.query.filter_by(twittid=twitt.id).filter_by(commentid=commentid).all()
+    if ComLikers:
+        ComLikers=[User.query.filter_by(id=comliker.userid).first() for comliker in ComLikers]
+        return render_template("CommentLikers.html",ComLikers=ComLikers)
+    return jsonify({
+        "message":"No one liked this comment"
+    })
 
 
 @app.route('/home/twitts/leave_comments/',methods=['POST'])
