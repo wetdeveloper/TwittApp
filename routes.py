@@ -2,6 +2,7 @@ from app import *
 from Model import *
 from tools import MessedTwittList,MessedRetwittList
 from Forms import *
+from forgetpassVerification import *
 
 
 @login_manager.user_loader
@@ -531,10 +532,11 @@ def Signup():
         if form.validate_on_submit():
             username=form.username.data
             password=form.password.data
+            email=form.email.data
             user=User.query.filter_by(username=form.username.data).first()
             if not(user):
                 try:
-                    user=User(username,password)
+                    user=User(username,password,email)
                     db.session.add(user)
                     db.session.commit()
                     login_user(user)
@@ -571,6 +573,59 @@ def Login():
         if 'message' in request.args:
             message=request.args['message']
         return render_template('login.html',message=message,form=form)
+
+
+@app.route('/home/login/forgetpassword/',methods=["GET","POST"])
+def ForgetPassword():
+    form=ForgetPasswordForm()
+    if request.method=="GET":
+        if current_user.is_authenticated:
+            return jsonify({
+                "message":"You are already a user.log out to login twice!"
+            })
+        return render_template("forgetpassword.html",form=form)
+    elif request.method=="POST":
+        if form.validate_on_submit():
+            username=form.username.data
+            user=User.query.filter_by(username=username).first()
+            if user:
+                emailAddress=user.email
+                session["verification"]={}
+                session["verification"]["verificationCode"]=[str(random.randint(0,9)) for i in range(4)]
+                session["verification"]["verificationCode"]="".join(session["verification"]["verificationCode"])
+                session["verification"]["emailAddress"]=emailAddress
+                mailVerCode(emailAddress,session["verification"]["verificationCode"])
+                return redirect(url_for("ResetPassword"))
+            else:
+                return jsonify({
+                    "message":"User is not found"
+                })
+        else:
+            return str(form.errors)
+@app.route('/home/login/forgetpassword/resetpassword',methods=['GET','POST'])
+def ResetPassword():
+    form=ResetPasswordForm()
+    if request.method=='GET':
+        if current_user.is_authenticated:
+            return jsonify({
+                "message":"You are already a user.log out to login twice!"
+            })
+        else:
+            if not("verification" in session):
+                return redirect(url_for('ForgetPassword'))
+            else:
+                return render_template('reset-password.html',form=form)
+    elif request.method=='POST':
+        if form.validate_on_submit():
+            if session["verification"]["verificationCode"]==form.verificationCode.data:
+                User.query.filter_by(email=session["verification"]["emailAddress"]).first().password=form.newPassword.data
+                del session["verification"]
+                return jsonify({
+                    "message":"Password is Changed!"
+                })
+            else:
+                del session["verification"]
+                return redirect(url_for("ForgetPassword"))
 
 
 @app.route('/home/twitts/direct/<string:reciever_id>',methods=['GET'])
@@ -703,6 +758,9 @@ def UnFollow():
                 return jsonify({
                     'message':f'Something Went Wrong'
                 })
+
+
+
 
 
 @app.route('/home/twitts/search-user/',methods=['GET'])
