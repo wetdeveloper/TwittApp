@@ -212,8 +212,11 @@
         <!-- end Retwitts -->
 
         {%if TwittsNumber==0 %}
-            <h3 style="color: red;">not any twitt from your followed users and you.</h3>
-
+            {%if current_user.is_authenticated %}
+                <h3 style="color: red; text-align: center;">not any twitt from your followed users and you.</h3>
+            {%else%}
+                <h3 style="color: red; text-align: center;">not any twitts from anybody:)) be the first one:)</h3>
+            {%endif%}
         {%endif%}
         <!-- Buttons -->
         <div class="row">
@@ -276,5 +279,7 @@
         </Step> <!-- html conside Step in jinja condition as a tag called Step -->
     </body>    
 </html>
+
+
 
 
