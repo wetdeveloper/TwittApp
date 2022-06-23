@@ -5,11 +5,13 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True,autoincrement=True)
     username = db.Column(db.String(64), unique=True,nullable=False)
     password= db.Column(db.String(64),nullable=False)
+    email=db.Column(db.String(100),nullable=False,unique=True)
     dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow())
     __tablename__='user'
-    def __init__(self,username,password):
+    def __init__(self,username,password,email):
         self.username=username
         self.password=password
+        self.email=email
 
     @classmethod
     def create(cls):
@@ -370,7 +372,7 @@ class DirectMessages(UserMixin, db.Model):
         
     def __repr__(self):
         return '<direct {}>'.format(self.id)
-db.create_all()
+db.create_all() #?
 
 
 # User.create()
@@ -401,6 +403,12 @@ db.create_all()
 # Comments.remove()
 # Twitts.remove()
 # User.remove()
+
+
+
+
+
+
 
 
 
