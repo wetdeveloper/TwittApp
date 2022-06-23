@@ -1,9 +1,10 @@
 import datetime
+import random
 import uuid
-from flask import Flask,render_template,url_for,request,redirect,jsonify
+from flask import Flask,render_template,url_for,request,redirect,jsonify,session
 from flask_login import login_user,LoginManager,current_user,logout_user
 from flask_sessionstore import Session
-from flask_wtf import FlaskForm ,CSRFProtect,RecaptchaField
+from flask_wtf import FlaskForm ,CSRFProtect,RecaptchaField,Recaptcha
 from wtforms import PasswordField,StringField, validators,SubmitField
 from flask_sqlalchemy import SQLAlchemy
 import sqlite3
@@ -20,13 +21,18 @@ app=Flask(__name__, template_folder='static')
 app.config['SECRET_KEY']='thisisehsanghgfhfdgd'
 app.config['WTF_CSRF_SECRET_KEY']='wtffdjfksdjfksjg;jgkdlsgh'
 
+app.config['service_email_address']="alexhe1998gerhanov@gmail.com"
+app.config['service_email_appPassword']='xwxlxfaddbpfemoc' #Like gmail app password
+
 login_manager=LoginManager()
 login_manager.init_app(app)
 
 app.config['RECAPTCHA_USE_SSL']= False
-app.config['RECAPTCHA_PUBLIC_KEY']= '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'
-app.config['RECAPTCHA_PRIVATE_KEY']='6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe'
-app.config['RECAPTCHA_OPTIONS'] = {'theme':'white'}
+app.config['RECAPTCHA_PUBLIC_KEY']= '6Lc5wpMgAAAAAGkyxQ7ks_6xanfvZgB3dcyz8eYN'
+app.config['RECAPTCHA_PRIVATE_KEY']='6Lc5wpMgAAAAAIAWAhI6EFGhlytXDFgPG5A1XBrf'
+app.config['RECAPTCHA_PARAMETERS']={'hl': 'zh', 'render': 'explicit'}
+app.config['RECAPTCHA_DATA_ATTRS ']={'theme': 'dark'}
+recaptcha = RecaptchaField(app)
 
 Bootstrap(app)
 db = SQLAlchemy(app)
