@@ -531,7 +531,8 @@ def Signup():
     if request.method=='POST':
         if form.validate_on_submit():
             username=form.username.data
-            password=form.password.data
+            # password=form.password.data
+            password=generate_password_hash(form.password.data)
             email=form.email.data
             user=User.query.filter_by(username=form.username.data).first()
             if not(user):
@@ -559,10 +560,13 @@ def Login():
         if form.validate_on_submit():
             username=form.username.data
             password=form.password.data
-            user=User.query.filter_by(username=username).filter_by(password=password).first()
+            # user=User.query.filter_by(username=username).filter_by(password=password).first()
+            user=User.query.filter_by(username=username).first()
             if user:
-                login_user(user)
-                return redirect(url_for('twitts'))
+                if check_password_hash(user.password,password):
+                    login_user(user)
+                    return redirect(url_for('twitts'))
+                return "Wrong Password"
             else:
                 return redirect(url_for('Login',message='No user matches taken username and password. \n try again. '))
         return str(form.errors)
