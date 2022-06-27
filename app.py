@@ -7,6 +7,7 @@ from flask_sessionstore import Session
 from flask_wtf import FlaskForm ,CSRFProtect,RecaptchaField,Recaptcha
 from wtforms import PasswordField,StringField, validators,SubmitField
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 from sqlalchemy.engine import Engine
 from sqlalchemy import event,create_engine,or_,desc
@@ -59,4 +60,3 @@ moment=Moment(app)
 
 if __name__=='__main__':
     app.run(debug='True')
-
