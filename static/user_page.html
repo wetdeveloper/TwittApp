@@ -13,6 +13,15 @@
         <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/comment_input.js')}}"></script>
         <script type="text/javascript" src="{{url_for('static',filename='assets/ajax/retwitt_form.js')}}"></script>
         <meta name="csrf-token" content="{{ csrf_token() }}">
+
+        <!-- <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script> -->
+        <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script> -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+        <style>
+            .modal-backdrop {
+                z-index: -1;
+            }
+        </style>
     </head>
     <body>
         <!-- Header -->
@@ -25,10 +34,46 @@
             <!-- Profile Picture -->
             <div class="col-12 col-sm-4 text-center mt-4 offset-sm-2">
                 <div>
-                    <img src="{{url_for('static',filename='/assets/profile_pictures/girl1.jpg')}}" class="rounded-circle" width="50%" height="50%">
+                    {%if ProfPhoAdd%}
+                        <img src="{{url_for('static',filename=ProfPhoAdd)}}" width="50%" height="50%">
+                    {%else%}
+                        <img src="{{url_for('static',filename='/ProfilePhotos/-1.jpg')}}" width="50%" height="50%">
+                    {%endif%}
                 </div>
+                {%if  current_user.is_authenticated and current_user.username==user.username %}
+                    <!-- Profile picture upload modal -->
+                        <button type="button" class="btn btn-primary" data-toggle="modal"data-target="#ProfPicUpForm">
+                            Upload New Profile Photo
+                        </button>
+                        <div class="modal fade" id="ProfPicUpForm" tabindex="1000" aria-labelledby="ProfPicUpForm">
+                            <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                <h5 class="modal-title" id="ProfPicUpForm">Upload the profile picture</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                                </div>
+                                <div class="modal-body">
+                                    <!-- Upload form -->
+                                        <form action="{{url_for('UploadProfPic')}}" method="post" enctype="multipart/form-data">
+                                            {{ProfPicUpForm.csrf_token()}}
+                                            {{ProfPicUpForm.uploadbox()}}
+                                            <button class="btn btn-lg btn-primary">{{ProfPicUpForm.submit(class="btn btn-primary text-light")}}</button>
+                                        </form>
+                                    <!-- End -->
+                                </div>
+                                <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+                    <!--End-->
+                {%endif%}
             </div>
             <!-- End -->
+           
             <!-- Followings and Followers -->
             <div class="col-12 col-sm-6">
                 <div class="row">

@@ -23,3 +23,7 @@ class ResetPasswordForm(FlaskForm):
       verificationCode=StringField('Verification code',[validators.DataRequired(), validators.Length(max=4,min=4)])
       submit=SubmitField('Rest the password')
       # recaptcha = RecaptchaField()
+
+class ProfPicUploadForm(FlaskForm):
+    uploadbox= FileField(validators=[validators.DataRequired()])
+    submit=SubmitField('Upload')

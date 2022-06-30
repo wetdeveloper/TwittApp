@@ -15,6 +15,7 @@ def load_user(user_id):
 @app.route('/userpage/<string:username>/',methods=["GET"])
 @app.route('/userpage/',methods=["GET"])
 def userPage(username=None):
+    ProfPicUpForm=ProfPicUploadForm()
     if username==None:
         if "username" in request.args:
             user=User.query.filter_by(username=request.args["username"]).first()
@@ -38,10 +39,47 @@ def userPage(username=None):
         following_users_number=len([user.following_userid for user in Following.query.filter_by(userid=user.id).all()]) #users that you followed
         followed_users_number=len([user.following_userid for user in Following.query.filter_by(following_userid=user.id).all()])#users that  followed you
         #######################End
+        # Profile Photo Address
+        if ProfilePhotos.query.filter_by(userid=user.id).first():
+            ProfPhoAdd=f'/ProfilePhotos/{user.id}.jpg'
+        else:
+            ProfPhoAdd=None
+        #End
         return render_template("user_page.html",user=user,twitts=twitts,unread_messages_senders=unread_messages_senders,unread_messages_number=unread_messages_number,DirectMessages=DirectMessages,
-        followed_users_number=followed_users_number,following_users_number=following_users_number,TwittLike=TwittLike,len=len,Following=Following,retwitts=retwitts,User=User)
+        followed_users_number=followed_users_number,following_users_number=following_users_number,TwittLike=TwittLike,len=len,Following=Following,retwitts=retwitts,User=User,
+        ProfPicUpForm=ProfPicUpForm,ProfPhoAdd=ProfPhoAdd)
     else:
         return "There isn't any user by this username."
+
+
+@app.route('/UploadProfilePicture',methods=['POST'])
+def UploadProfPic():
+    form=ProfPicUploadForm()
+    if form.validate_on_submit:
+        if current_user.is_authenticated:
+            userid=current_user.id
+            flag=True #had profile photo
+            if ProfilePhotos.query.filter_by(userid=userid).first():#if user already has a profile photo
+                os.remove('static/ProfilePhotos/'+str(userid)+'.jpg')
+            else:
+                flag=False
+            try:
+                filename = secure_filename(str(userid)+'.jpg')
+                form.uploadbox.data.save('static/ProfilePhotos/' + filename)
+                if flag:
+                    PF=ProfilePhotos.query.filter_by(userid=userid).first()
+                    PF.dtime=datetime.datetime.now()
+                else:
+                    PF=ProfilePhotos(userid)
+                    db.session.add(PF)
+                db.session.commit()
+            except BaseException as e:
+                return str(e)
+            else:
+                return "uploaded"
+        return redirect(url_for("userPage",username=current_user.username))
+    return str(form.errors)
+
 
 @app.route('/home/twitts/twitt_it/',methods=['POST','GET'])
 def TwittIt():
@@ -787,4 +825,5 @@ admin.add_view(ModelView(Following,db.session))
 admin.add_view(ModelView(Retwitts,db.session))
 admin.add_view(ModelView(CommentReplaysLike,db.session))
 admin.add_view(ModelView(ReplaysOnReplayLikes,db.session))
+admin.add_view(ModelView(ProfilePhotos,db.session))
 app.run(debug='True')

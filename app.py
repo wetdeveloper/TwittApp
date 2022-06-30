@@ -1,10 +1,13 @@
 import datetime
 import random
 import uuid
+import os
 from flask import Flask,render_template,url_for,request,redirect,jsonify,session
 from flask_login import login_user,LoginManager,current_user,logout_user
 from flask_sessionstore import Session
 from flask_wtf import FlaskForm ,CSRFProtect,RecaptchaField,Recaptcha
+from flask_wtf.file import FileField
+from werkzeug.utils import secure_filename
 from wtforms import PasswordField,StringField, validators,SubmitField
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash

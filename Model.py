@@ -372,7 +372,28 @@ class DirectMessages(UserMixin, db.Model):
         
     def __repr__(self):
         return '<direct {}>'.format(self.id)
-db.create_all() #?
+
+class ProfilePhotos(UserMixin, db.Model):
+    __tablename__='profilephotos'
+    id = db.Column(db.Integer, primary_key=True)
+    userid= db.Column(db.Integer,db.ForeignKey('user.id',ondelete='CASCADE'),nullable=False)
+    dtime=db.Column(db.DateTime,nullable=False,default=datetime.datetime.utcnow)
+    fk_userid=db.relationship('User',foreign_keys=[userid])
+    def __init__(self,userid):
+        self.userid=userid
+    @classmethod
+    def create(cls):
+        cls.__table__.create(engine)
+    
+    @classmethod
+    def remove(cls):
+        cls.__table__.drop(engine)
+        
+    def __repr__(self):
+        return '<profilephoto {}>'.format(self.id)
+
+
+db.create_all() 
 
 
 # User.create()
@@ -387,10 +408,11 @@ db.create_all() #?
 # Retwitts.create()
 # CommentReplaysLike.create()
 # ReplaysOnReplayLikes.create()
+# ProfilePhotos.create()
 
 
 
-
+# ProfilePhotos.remove()
 # ReplaysOnReplayLikes.remove()
 # CommentReplaysLike.remove()
 # Retwitts.remove()
@@ -403,6 +425,7 @@ db.create_all() #?
 # Comments.remove()
 # Twitts.remove()
 # User.remove()
+
 
 
 
