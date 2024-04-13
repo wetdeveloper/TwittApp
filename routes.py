@@ -4,13 +4,13 @@ from tools import MessedTwittList,MessedRetwittList
 from Forms import *
 from forgetpassVerification import *
 
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(user_id)
 
-
-
+@app.route('/')
+def fuck():
+    return "hiiiiii"
 
 @app.route('/userpage/<string:username>/',methods=["GET"])
 @app.route('/userpage/',methods=["GET"])
@@ -826,4 +826,6 @@ admin.add_view(ModelView(Retwitts,db.session))
 admin.add_view(ModelView(CommentReplaysLike,db.session))
 admin.add_view(ModelView(ReplaysOnReplayLikes,db.session))
 admin.add_view(ModelView(ProfilePhotos,db.session))
+
+
 app.run(debug='True')

@@ -19,32 +19,39 @@ from flask_login import UserMixin
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_moment import Moment 
-
-
+from flask_cors import CORS
+import pytest
 app=Flask(__name__, template_folder='static')
-app.config['SECRET_KEY']='thisisehsanghgfhfdgd'
+
+CORS(app)
+app.app_context().push()
+SECRET_KEY = os.urandom(32)
+app.config['SECRET_KEY'] = SECRET_KEY
+app.config['SESSION_TYPE'] = 'filesystem'
+
 app.config['WTF_CSRF_SECRET_KEY']='wtffdjfksdjfksjg;jgkdlsgh'
 
-app.config['service_email_address']="alexhe1998gerhanov@gmail.com"
-app.config['service_email_appPassword']='xwxlxfaddbpfemoc' #Like gmail app password
+# app.config['service_email_address']="alexhe1998gerhanov@gmail.com"
+# app.config['service_email_appPassword']='xwxlxfaddbpfemoc' #Like gmail app password
 
 login_manager=LoginManager()
 login_manager.init_app(app)
 
-app.config['RECAPTCHA_USE_SSL']= False
-app.config['RECAPTCHA_PUBLIC_KEY']= '6Lc5wpMgAAAAAGkyxQ7ks_6xanfvZgB3dcyz8eYN'
-app.config['RECAPTCHA_PRIVATE_KEY']='6Lc5wpMgAAAAAIAWAhI6EFGhlytXDFgPG5A1XBrf'
-app.config['RECAPTCHA_PARAMETERS']={'hl': 'zh', 'render': 'explicit'}
-app.config['RECAPTCHA_DATA_ATTRS ']={'theme': 'dark'}
-recaptcha = RecaptchaField(app)
+# app.config['RECAPTCHA_USE_SSL']= False
+# app.config['RECAPTCHA_PUBLIC_KEY']= '6Lc5wpMgAAAAAGkyxQ7ks_6xanfvZgB3dcyz8eYN'
+# app.config['RECAPTCHA_PRIVATE_KEY']='6Lc5wpMgAAAAAIAWAhI6EFGhlytXDFgPG5A1XBrf'
+# app.config['RECAPTCHA_PARAMETERS']={'hl': 'zh', 'render': 'explicit'}
+# app.config['RECAPTCHA_DATA_ATTRS ']={'theme': 'dark'}
+# recaptcha = RecaptchaField(app)
 
 Bootstrap(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Db.db'
 db = SQLAlchemy(app)
+
 csrf=CSRFProtect(app)
 app.config['SESSION_SQLALCHEMY_TABLE'] = 'sessions'
 app.config['SESSION_SQLALCHEMY'] = db
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///DB.db'
-app.config['SESSION_TYPE'] = 'sqlalchemy'
+# app.config['SESSION_TYPE'] = 'sqlalchemy'
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
     if type(dbapi_connection) is sqlite3.Connection:  # play well with other DB backends
@@ -54,12 +61,11 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 admin=Admin(app,name='My App',template_mode='bootstrap3')
 engine=create_engine('sqlite:///DB.db')
-Session(app)
+
 moment=Moment(app)
 
 
-
-
-
-if __name__=='__main__':
+if __name__ == "__main__":
+    Session(app)
     app.run(debug='True')
+
