@@ -1,5 +1,4 @@
 from app import *
-from app import *
 from Model import *
 
 def MessedTwittList(following_users=None):

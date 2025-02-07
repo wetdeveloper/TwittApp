@@ -679,6 +679,7 @@ def Direct(reciever_id=None): #Need to be None to handle Post method otherwise w
             reciever_id=request.form['reciever_id']
             message=request.form['message']
             dm=DirectMessages(current_user.id, reciever_id, message)
+           # return reciever_id
             try:
                 db.session.add(dm)
                 db.session.commit()
@@ -689,11 +690,12 @@ def Direct(reciever_id=None): #Need to be None to handle Post method otherwise w
         elif request.method=='GET':
             if reciever_id==None:
                 if 'reciever_id' in request.args:
-                    reciever_username=request.args['reciever_id']
+                   # reciever_username=request.args['reciever_id'] Wrong(i will delete this)
+                   reciever_id=request.args['reciever_id']
                 else:
                     return redirect(url_for('twitts'))
             elif reciever_id==current_user.id:
-                    return "You  can not send message to yourself! this option will be able soon."
+                    return "You  can not send message to yourself! this option will be comming  soon."
             ############ set unread=False
             unread_messages=DirectMessages.query.filter_by(reciever_id=current_user.id).filter_by(sender_id=reciever_id).filter_by(unread=True).all()
             for unmsg in unread_messages:
