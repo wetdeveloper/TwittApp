@@ -21,6 +21,7 @@ from flask_admin.contrib.sqla import ModelView
 from flask_moment import Moment 
 from flask_cors import CORS
 # import pytest
+
 app=Flask(__name__, template_folder='static')
 
 CORS(app)

@@ -827,4 +827,5 @@ admin.add_view(ModelView(ReplaysOnReplayLikes,db.session))
 admin.add_view(ModelView(ProfilePhotos,db.session))
 
 
+
 app.run(debug='True')
