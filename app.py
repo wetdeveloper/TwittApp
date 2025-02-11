@@ -20,7 +20,7 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_moment import Moment 
 from flask_cors import CORS
-import pytest
+# import pytest
 app=Flask(__name__, template_folder='static')
 
 CORS(app)
@@ -28,11 +28,12 @@ app.app_context().push()
 SECRET_KEY = os.urandom(32)
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
 
 app.config['WTF_CSRF_SECRET_KEY']='wtffdjfksdjfksjg;jgkdlsgh'
 
-# app.config['service_email_address']="alexhe1998gerhanov@gmail.com"
-# app.config['service_email_appPassword']='xwxlxfaddbpfemoc' #Like gmail app password
+# app.config['service_email_address']="your mail address"
+# app.config['service_email_appPassword']='abcdefghhhhhhh" #Like gmail app password
 
 login_manager=LoginManager()
 login_manager.init_app(app)
@@ -66,6 +67,6 @@ moment=Moment(app)
 
 
 if __name__ == "__main__":
-    Session(app)
+    #Session(app)
     app.run(debug='True')
 

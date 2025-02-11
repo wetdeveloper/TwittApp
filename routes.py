@@ -8,9 +8,6 @@ from forgetpassVerification import *
 def load_user(user_id):
     return User.query.get(user_id)
 
-@app.route('/')
-def fuck():
-    return "hiiiiii"
 
 @app.route('/userpage/<string:username>/',methods=["GET"])
 @app.route('/userpage/',methods=["GET"])
