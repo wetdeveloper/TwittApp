@@ -827,5 +827,36 @@ admin.add_view(ModelView(ReplaysOnReplayLikes,db.session))
 admin.add_view(ModelView(ProfilePhotos,db.session))
 
 
-
-app.run(debug='True')
+f=False
+if f:
+    PORT = 5000
+    
+    print(f"🔄 آزاد کردن پورت {PORT} ...")
+    
+    # روش مناسب برای مانجارو (با ss)
+    try:
+        # پیدا کردن PID فرآیند روی پورت
+        result = subprocess.run(
+            f"ss -tlnp | grep :{PORT}", 
+            shell=True, 
+            capture_output=True, 
+            text=True
+        )
+        
+        if result.stdout:
+            # استخراج PID
+            pid_line = result.stdout.strip().split('\n')[0]
+            if 'pid=' in pid_line:
+                pid = pid_line.split('pid=')[1].split(',')[0]
+                subprocess.run(f"kill -9 {pid}", shell=True)
+                print(f"   Process {pid} killed")
+                time.sleep(1.5)
+            else:
+                print("   Process found but PID extraction failed")
+    except:
+        pass
+    
+    print(f"🚀 Starting Flask on port {PORT}")
+    
+if __name__ == '__main__':
+    app.run(debug=True)
