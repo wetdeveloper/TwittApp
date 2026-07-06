@@ -1,4 +1,4 @@
-cat > README.md << 'EOF'
+
 # 🕊️ **TwittApp** - Modern Twitter Clone
 
 ![Banner](https://via.placeholder.com/1200x400/1da1f2/ffffff?text=TwittApp+-+Modern+Twitter+Clone)
