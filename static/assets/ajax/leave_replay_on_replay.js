@@ -7,16 +7,28 @@ $(document).ready(function(){
 
         var form = $(this).closest('.replay_on_replays_input_form');
         
-        var comment_replay_id = form.find("#comment_replay_id").val();
-        var id = form.find("#id").val();
-        var twittid = form.find("#twittid").val();
-        var replaytable = form.find("#replaytable").val();
+        // جستجوی قوی‌تر برای فیلدها
+        var comment_replay_id = form.find("input[name='comment_replay_id'], #comment_replay_id").val();
+        var id = form.find("input[name='id'], #id").val();
+        var twittid = form.find("input[name='twittid'], #twittid").val();
+        var replaytable = form.find("input[name='replaytable'], #replaytable").val() || "1";
         var replay = form.find("#replay").val().trim();
 
-        console.log("📤 Sending:", { comment_replay_id, id, twittid, replaytable, replay });
+        console.log("📤 Sending Replay Data:", { 
+            comment_replay_id, 
+            id, 
+            twittid, 
+            replaytable, 
+            replay 
+        });
 
         if (!replay) {
             alert("لطفاً متن ریپلای را وارد کنید!");
+            return;
+        }
+
+        if (!twittid || !comment_replay_id) {
+            alert("خطا: اطلاعات ناقص است. صفحه را رفرش کنید.");
             return;
         }
 
@@ -39,8 +51,8 @@ $(document).ready(function(){
                 location.reload();
             },
             error: function(xhr) {
-                console.error("Full Error:", xhr.responseText);
-                alert("خطا در ارسال ریپلای");
+                console.error("❌ Server Error:", xhr.responseText);
+                alert("خطا در ارسال. جزئیات در کنسول.");
             },
             complete: function() {
                 submitBtn.prop('disabled', false).text('replay');
