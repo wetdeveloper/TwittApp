@@ -65,4 +65,4 @@ source venv/bin/activate     # On Linux/Mac
 pip install flask flask-sqlalchemy flask-login flask-wtf werkzeug
 
 # Run the app
-python3 app.py
+python3 routes.py
