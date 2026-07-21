@@ -9,44 +9,57 @@ def load_user(user_id):
     return User.query.get(user_id)
 
 
-@app.route('/userpage/<string:username>/',methods=["GET"])
-@app.route('/userpage/',methods=["GET"])
+@app.route('/userpage/<string:username>/', methods=["GET"], endpoint='userPage')
+@app.route('/userpage/', methods=["GET"], endpoint='userPage')
 def userPage(username=None):
-    ProfPicUpForm=ProfPicUploadForm()
-    if username==None:
-        if "username" in request.args:
-            user=User.query.filter_by(username=request.args["username"]).first()
-        else:
+    ProfPicUpForm = ProfPicUploadForm()
+    
+    if username is None:
+        username = request.args.get("username")
+        if not username:
             return redirect(url_for("twitts"))
-    else:
-        user=User.query.filter_by(username=username).first()
-    if user:
-        twitts=Twitts.query.filter_by(userid=user.id).all()
-        retwitts=[Twitts.query.filter_by(id=retwitt.twittid).first() for retwitt in Retwitts.query.filter_by(userid=user.id).all()]
-        ################## Unread messages notification
-        if current_user.is_authenticated:
-            unread_messages_senders=[dm.sender_id for dm in DirectMessages.query.filter_by(reciever_id=current_user.id).filter_by(unread=True).all()]
-            unread_messages_number=DirectMessages.query.filter_by(reciever_id=current_user.id).filter_by(unread=True).count()
-        else:
-            unread_messages=False
-            unread_messages_senders=False
-            unread_messages_number=False
-        #######################End unread messages notification
-        ####################### followings and followers id
-        following_users_number=len([user.following_userid for user in Following.query.filter_by(userid=user.id).all()]) #users that you followed
-        followed_users_number=len([user.following_userid for user in Following.query.filter_by(following_userid=user.id).all()])#users that  followed you
-        #######################End
-        # Profile Photo Address
-        if ProfilePhotos.query.filter_by(userid=user.id).first():
-            ProfPhoAdd=f'/ProfilePhotos/{user.id}.jpg'
-        else:
-            ProfPhoAdd=None
-        #End
-        return render_template("user_page.html",user=user,twitts=twitts,unread_messages_senders=unread_messages_senders,unread_messages_number=unread_messages_number,DirectMessages=DirectMessages,
-        followed_users_number=followed_users_number,following_users_number=following_users_number,TwittLike=TwittLike,len=len,Following=Following,retwitts=retwitts,User=User,
-        ProfPicUpForm=ProfPicUpForm,ProfPhoAdd=ProfPhoAdd)
-    else:
+    
+    user = User.query.filter_by(username=username).first()
+    if not user:
         return "There isn't any user by this username."
+
+    # === توییت‌ها و ریتوییت‌ها ===
+    twitts = Twitts.query.filter_by(userid=user.id).order_by(Twitts.dtime.desc()).all()
+    retwitts = []
+    for ret in Retwitts.query.filter_by(userid=user.id).order_by(Retwitts.dtime.desc()).all():
+        original = Twitts.query.get(ret.twittid)
+        if original:
+            retwitts.append(original)
+
+    # Unread messages
+    if current_user.is_authenticated:
+        unread_messages_senders = [dm.sender_id for dm in DirectMessages.query.filter_by(
+            reciever_id=current_user.id, unread=True).all()]
+        unread_messages_number = DirectMessages.query.filter_by(
+            reciever_id=current_user.id, unread=True).count()
+    else:
+        unread_messages_senders = []
+        unread_messages_number = 0
+
+    following_users_number = Following.query.filter_by(userid=user.id).count()
+    followed_users_number = Following.query.filter_by(following_userid=user.id).count()
+
+    ProfPhoAdd = f'/ProfilePhotos/{user.id}.jpg' if ProfilePhotos.query.filter_by(userid=user.id).first() else None
+
+    return render_template("user_page.html",
+        user=user,
+        twitts=twitts,
+        retwitts=retwitts,
+        unread_messages_senders=unread_messages_senders,
+        unread_messages_number=unread_messages_number,
+        followed_users_number=followed_users_number,
+        following_users_number=following_users_number,
+        TwittLike=TwittLike,
+        Following=Following,
+        User=User,
+        ProfPicUpForm=ProfPicUpForm,
+        ProfPhoAdd=ProfPhoAdd
+    )
 
 
 @app.route('/UploadProfilePicture',methods=['POST'])
@@ -827,36 +840,7 @@ admin.add_view(ModelView(ReplaysOnReplayLikes,db.session))
 admin.add_view(ModelView(ProfilePhotos,db.session))
 
 
-f=False
-if f:
-    PORT = 5000
-    
-    print(f"🔄 آزاد کردن پورت {PORT} ...")
-    
-    # روش مناسب برای مانجارو (با ss)
-    try:
-        # پیدا کردن PID فرآیند روی پورت
-        result = subprocess.run(
-            f"ss -tlnp | grep :{PORT}", 
-            shell=True, 
-            capture_output=True, 
-            text=True
-        )
-        
-        if result.stdout:
-            # استخراج PID
-            pid_line = result.stdout.strip().split('\n')[0]
-            if 'pid=' in pid_line:
-                pid = pid_line.split('pid=')[1].split(',')[0]
-                subprocess.run(f"kill -9 {pid}", shell=True)
-                print(f"   Process {pid} killed")
-                time.sleep(1.5)
-            else:
-                print("   Process found but PID extraction failed")
-    except:
-        pass
-    
-    print(f"🚀 Starting Flask on port {PORT}")
+
     
 if __name__ == '__main__':
     app.run(debug=True)
