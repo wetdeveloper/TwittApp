@@ -702,29 +702,34 @@ def Direct(reciever_id=None): #Need to be None to handle Post method otherwise w
                 return str(e)
             else:
                 return redirect(url_for('Direct',reciever_id=reciever_id))
-        elif request.method=='GET':
-            if reciever_id==None:
+        elif request.method == 'GET':
+            if reciever_id is None:
                 if 'reciever_id' in request.args:
-                   # reciever_username=request.args['reciever_id'] Wrong(i will delete this)
-                   reciever_id=request.args['reciever_id']
+                    reciever_id = request.args['reciever_id']
                 else:
                     return redirect(url_for('twitts'))
-            elif reciever_id==current_user.id:
-                    return "You  can not send message to yourself! this option will be comming  soon."
+            # elif reciever_id==current_user.id:
+            #         return "You  can not send message to yourself! this option will be comming  soon."
             ############ set unread=False
-            unread_messages=DirectMessages.query.filter_by(reciever_id=current_user.id).filter_by(sender_id=reciever_id).filter_by(unread=True).all()
-            for unmsg in unread_messages:
-                unmsg.unread=False
-                db.session.commit()
-            ############ end set unread=False
-            # dms=DirectMessages.query.filter(or_(DirectMessages.reciever_id==reciever_id,DirectMessages.reciever_id==current_user.id)).filter(or_(DirectMessages.sender_id==reciever_id,DirectMessages.sender_id==current_user.id)).order_by(desc(DirectMessages.dtime)).all()
-            if int(reciever_id)!=current_user.id:
-                dms=DirectMessages.query.filter_by(reciever_id=reciever_id).filter_by(sender_id=current_user.id).all()+DirectMessages.query.filter_by(reciever_id=current_user.id).filter_by(sender_id=reciever_id).all()
-            else:
-                dms=DirectMessages.query.filter_by(reciever_id=reciever_id).filter_by(sender_id=current_user.id).all()
-            dms=sorted(dms,key=lambda x:x.dtime)
-            return render_template('directpage.html',reciever_id=reciever_id,dms=dms,User=User)
+            unread_messages = DirectMessages.query.filter_by(
+        reciever_id=current_user.id, 
+        sender_id=reciever_id
+    ).filter_by(unread=True).all()
     
+        for unmsg in unread_messages:
+            unmsg.unread = False
+            db.session.commit()
+
+    # دریافت پیام‌ها
+        dms = DirectMessages.query.filter(
+            ((DirectMessages.reciever_id == reciever_id) & (DirectMessages.sender_id == current_user.id)) |
+            ((DirectMessages.reciever_id == current_user.id) & (DirectMessages.sender_id == reciever_id))
+        ).order_by(DirectMessages.dtime).all()
+
+        return render_template('directpage.html', 
+                               reciever_id=reciever_id, 
+                               dms=dms, 
+                               User=User)
     return 'You should login first.'
 
 
