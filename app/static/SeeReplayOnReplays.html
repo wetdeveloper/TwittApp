@@ -1,0 +1,103 @@
+
+{% extends "base.html" %}
+
+{% block title %}ریپلای‌های ریپلای{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+
+    <h1 class="text-3xl font-bold text-center mb-10 text-gray-800 flex items-center justify-center gap-3">
+        <i class="fa-solid fa-layer-group text-indigo-600"></i>
+        ریپلای‌های ریپلای
+    </h1>
+
+    {% for replay in replayonreplays %}
+    <div class="bg-white rounded-3xl shadow-lg mb-8 p-6 hover:shadow-xl transition-all">
+        <div class="flex gap-4">
+            <!-- Avatar -->
+            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-inner">
+                {{ User.query.filter_by(id=replay.userid).first().username[:1].upper() }}
+            </div>
+
+            <div class="flex-1">
+                <!-- User Info -->
+                <div class="flex items-center justify-between">
+                    <strong class="text-xl">{{ User.query.filter_by(id=replay.userid).first().username }}</strong>
+                    <span class="text-gray-500 text-sm">{{ moment(replay.dtime).fromNow() }}</span>
+                </div>
+
+                <!-- Replay Text -->
+                <p class="mt-4 text-gray-800 text-[17px] leading-relaxed">
+                    {{ replay.replay }}
+                </p>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-8 mt-6 pt-6 border-t text-gray-500">
+                    <!-- Like -->
+                    {% if current_user.is_authenticated %}
+                    <div id="replay_on_replay_like_form_{{replay.id}}" class="flex items-center gap-2">
+                        <form class="replay_on_replay_like_form">
+                            <input type="hidden" name="twittid" id="twittid" value="{{ replay.twittid }}">
+                            <input type="hidden" name="liked_replay_id" id="liked_replay_id" value="{{ replay.replayid }}">
+                            <input type="hidden" name="id" id="id" value="{{ replay.id }}">
+                            <input type="hidden" name="comment_replay_id" id="comment_replay_id" value="{{ replay.comment_replay_id }}">
+                            <input type="hidden" name="replaytable" id="replaytable" value="{{ replay.replaytable }}">
+                            <button type="submit" class="replay_on_replay_like_form_submit">❤️</button>
+                         </form>
+                        <span id="replay_on_replay_likes_number_{{replay.id}}" class="font-medium">
+                            {{ ReplaysOnReplayLikes.query.filter_by(liked_replay_id=replay.id).count() }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    <!-- See Replays -->
+                    <a href="{{ url_for('main.SeeReplayOnReplays', id=replay.id, twittid=replay.twittid, comment_replay_id=replay.comment_replay_id, request_from=0) }}" 
+                       class="flex items-center gap-2 hover:text-indigo-600 transition">
+                        <i class="fa-solid fa-comments"></i>
+                        <span>ریپلای‌ها</span>
+                    </a>
+                </div>
+
+               <!-- Leave Replay Form -->
+            {% if current_user.is_authenticated %}
+                <div class="mt-8 pt-6 border-t">
+                    <form class="replay_on_replays_input_form flex gap-3 items-center">
+                        <input type="hidden" name="id" value="{{ replay.id }}">
+                        <input type="hidden" name="twittid" value="{{ replay.twittid }}">
+                        <input type="hidden" name="comment_replay_id" value="{{ replay.comment_replay_id }}">
+                        <input type="hidden" name="replaytable" value="0">
+                        
+                        <input type="text" 
+                               name="replay" 
+                               id="replay"
+                               class="flex-1 bg-gray-50 border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 rounded-3xl px-6 py-4 outline-none text-lg transition-all placeholder-gray-400"
+                               placeholder="ریپلای خودت رو اینجا بنویس... 💬">
+                        
+                        <button type="button" 
+                                class="replay_on_replay_input_form_submit 
+                                       bg-gradient-to-r from-indigo-600 to-purple-600 
+                                       hover:from-indigo-700 hover:to-purple-700 
+                                       text-white font-semibold 
+                                       px-8 py-4 rounded-3xl 
+                                       shadow-lg shadow-indigo-500/30 
+                                       active:scale-95 transition-all duration-200
+                                       flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            ارسال
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='assets/ajax/replay_on_replay_like_form.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/ajax/leave_replay_on_replay.js') }}"></script>
+{% endblock %}
+

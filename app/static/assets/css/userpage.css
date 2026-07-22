@@ -1,0 +1,14 @@
+#userpage_header{
+    transform:translate(0,20px)
+}
+#twittsbox{
+    transform: translate(0,30px);
+    position: absolute;
+    visibility: hidden;
+}
+#retwittsbox{
+    transform: translate(0,30px);
+    position: absolute;
+    visibility:hidden;
+
+}

@@ -1,0 +1,33 @@
+
+body{
+    background-color: lightcyan;
+}
+
+#localtime{
+    font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+#welcome{
+    font-size:100px;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+#search_field{
+    border: solid 2px;
+}
+
+
+#twitt_input{
+    background-color: hsl(0, 0%, 100%);
+    border:solid 2px;
+}
+.twitt-content{
+    background-color: hsl(0, 0%, 100%);
+    border:solid 2px;
+}
+.retwitt-content-box{
+    background-color: hsl(0, 0%, 100%);
+    border:solid 2px;
+}
+.pagenumberbutton{
+    display: inline-block;
+}

@@ -1,0 +1,94 @@
+
+
+{% extends "base.html" %}
+
+{% block title %}ریپلای‌های کامنت{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+
+    <h1 class="text-3xl font-bold text-center mb-10 text-gray-800 flex items-center justify-center gap-3">
+        <i class="fa-solid fa-reply text-purple-600"></i>
+        ریپلای‌های کامنت
+    </h1>
+
+    {% for comrep in commentreplays %}
+    <div class="bg-white rounded-3xl shadow-lg mb-8 p-6 hover:shadow-xl transition-all">
+        <div class="flex gap-4">
+            <!-- Avatar -->
+            <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-inner">
+                {{ User.query.filter_by(id=comrep.userid).first().username[:1].upper() }}
+            </div>
+
+            <div class="flex-1">
+                <!-- User Info -->
+                <div class="flex items-center justify-between">
+                    <strong class="text-xl">{{ User.query.filter_by(id=comrep.userid).first().username }}</strong>
+                    <span class="text-gray-500 text-sm">{{ moment(comrep.dtime).fromNow() }}</span>
+                </div>
+
+                <!-- Replay Text -->
+                <p class="mt-4 text-gray-800 text-[17px] leading-relaxed">
+                    {{ comrep.replay }}
+                </p>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-6 mt-6 pt-6 border-t text-gray-500">
+                    <!-- Like -->
+                    {% if current_user.is_authenticated %}
+                    <div id="comment_replay_like_form_{{comrep.id}}" class="flex items-center gap-2">
+                        <form class="comment_replay_like_form">
+                        <input type="hidden" name="twittid" value="{{ comrep.twittid }}">
+                        <input type="hidden" name="commentid" value="{{ comrep.commentid }}">
+                        <input type="hidden" name="comment_replay_id" value="{{ comrep.id }}">
+                        <input type="hidden" name="replaytable" value="1">
+                        <button type="submit" class="comment_replay_like_form_submit">❤️</button>
+                        </form>
+                        <span id="comment_replay_likes_number_{{comrep.id}}" class="font-medium">
+                            {{ CommentReplaysLike.query.filter_by(comment_replay_id=comrep.id).count() }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    <!-- See Replays Button -->
+                    <a href="{{ url_for('main.SeeReplayOnReplays', id=comrep.id, twittid=comrep.twittid, comment_replay_id=comrep.id, request_from=1) }}" 
+                       class="flex items-center gap-2 px-5 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-2xl transition">
+                        <i class="fa-solid fa-comments"></i>
+                        <span>دیدن ریپلای‌ها</span>
+                    </a>
+                </div>
+
+                <!-- Leave Replay Form -->
+                {% if current_user.is_authenticated %}
+                <div class="mt-8 pt-6 border-t">
+                    <form class="replay_on_replays_input_form flex gap-3">
+                        <input type="hidden" name="comment_replay_id" id="comment_replay_id" value="{{ comrep.id }}">
+                        <input type="hidden" name="id" id="id" value="{{ comrep.id }}">
+                        <input type="hidden" name="twittid" id="twittid" value="{{ comrep.twittid }}">
+                        <input type="hidden" name="replaytable" id="replaytable" value="1">
+                        
+                        <input type="text" name="replay" id="replay" 
+                               class="flex-1 bg-gray-100 rounded-2xl px-5 py-3 focus:ring-2 focus:ring-purple-400 outline-none"
+                               placeholder="ریپلای خودت رو بنویس...">
+                        
+                        <button type="button" 
+                                class="replay_on_replay_input_form_submit bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-2xl transition-all active:scale-95">
+                            <i class="fa-solid fa-reply"></i>
+                            ریپلای
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='assets/ajax/comment_replay_like_form.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/ajax/leave_replay_on_replay.js') }}"></script>
+{% endblock %}
+

@@ -1,0 +1,876 @@
+from werkzeug.security import check_password_hash, generate_password_hash
+from flask import Blueprint
+from .Model import *
+from .tools import get_messed_twitts, get_messed_retwitts   
+from .Forms import *
+from .forgetpassVerification import *
+from flask_admin.contrib.sqla import ModelView
+from flask import (
+    request,
+    render_template,
+    redirect,
+    url_for,
+    flash,
+    session,
+    jsonify,
+    abort,
+)
+
+from flask_login import (
+    current_user,
+    login_user,
+    logout_user,
+    login_required
+)
+
+from sqlalchemy.orm import joinedload
+
+bp = Blueprint("main", __name__)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
+
+
+@bp.route('/userpage/<string:username>/', methods=["GET"])
+@bp.route('/userpage/', methods=["GET"])
+def userPage(username=None):
+    ProfPicUpForm = ProfPicUploadForm()
+
+    if not username:
+        username = request.args.get("username")
+        if not username:
+            return redirect(url_for("main.twitts"))
+
+    # کوئری اصلی کاربر + اطلاعات پروفایل
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return "There isn't any user by this username."
+
+    # شمارش‌های بهینه (بدون لوپ اضافی)
+    followed_users_number = Following.query.filter_by(following_userid=user.id).count()   # فالوورها
+    following_users_number = Following.query.filter_by(userid=user.id).count()          # فالوئینگ‌ها
+
+    # توییت‌های کاربر
+    twitts = Twitts.query.filter_by(userid=user.id)\
+        .options(joinedload(Twitts.fk))\
+        .order_by(desc(Twitts.dtime)).all()
+
+    # ری‌توییت‌ها
+    retwitts = db.session.query(Twitts)\
+        .join(Retwitts, Twitts.id == Retwitts.twittid)\
+        .filter(Retwitts.userid == user.id)\
+        .options(joinedload(Twitts.fk))\
+        .order_by(desc(Retwitts.dtime)).all()
+
+    # اطلاعات پیام‌های خوانده‌نشده (فقط برای کاربر فعلی)
+    unread_messages_number = 0
+    unread_messages_senders = []
+    if current_user.is_authenticated:
+        unread_query = DirectMessages.query.filter_by(
+            reciever_id=current_user.id, 
+            unread=True
+        )
+        unread_messages_number = unread_query.count()
+        unread_messages_senders = [dm.sender_id for dm in unread_query.all()]
+
+    # آدرس عکس پروفایل
+    ProfPhoAdd = f'/ProfilePhotos/{user.id}.jpg' if ProfilePhotos.query.filter_by(userid=user.id).first() else None
+
+    return render_template("user_page.html",
+                           user=user,
+                           twitts=twitts,
+                           retwitts=retwitts,
+                           unread_messages_senders=unread_messages_senders,
+                           unread_messages_number=unread_messages_number,
+                           DirectMessages=DirectMessages,
+                           followed_users_number=followed_users_number,
+                           following_users_number=following_users_number,
+                           TwittLike=TwittLike,
+                           Following=Following,
+                           User=User,
+                           ProfPicUpForm=ProfPicUpForm,
+                           ProfPhoAdd=ProfPhoAdd,
+                           len=len)
+
+
+@bp.route('/UploadProfilePicture',methods=['POST'])
+def UploadProfPic():
+    form=ProfPicUploadForm()
+    if form.validate_on_submit:
+        if current_user.is_authenticated:
+            userid=current_user.id
+            flag=True #had profile photo
+            if ProfilePhotos.query.filter_by(userid=userid).first():#if user already has a profile photo
+                os.remove('static/ProfilePhotos/'+str(userid)+'.jpg')
+            else:
+                flag=False
+            try:
+                filename = secure_filename(str(userid)+'.jpg')
+                form.uploadbox.data.save('static/ProfilePhotos/' + filename)
+                if flag:
+                    PF=ProfilePhotos.query.filter_by(userid=userid).first()
+                    PF.dtime=datetime.datetime.now()
+                else:
+                    PF=ProfilePhotos(userid)
+                    db.session.add(PF)
+                db.session.commit()
+            except BaseException as e:
+                return str(e)
+            else:
+                return "uploaded"
+        return redirect(url_for("main.userPage",username=current_user.username))
+    return str(form.errors)
+
+
+@bp.route('/home/twitts/twitt_it/',methods=['POST','GET'])
+def TwittIt():
+    if request.method=='POST':
+        twitt=Twitts(current_user.id,request.form['twitt_text'])
+        try:
+            db.session.add(twitt)
+            db.session.commit()
+        except BaseException as e:
+            return str(e)
+        else:
+            return jsonify({
+                "url":url_for('main.twitts'),'html':'twitts.html',
+                'message':"twitted:)"
+                }
+                )
+
+
+@bp.route('/home/twitts/<int:start>', methods=['GET'])
+@bp.route('/home/twitts/', defaults={'start': 0}, methods=['GET'])
+def twitts(start):
+    login_message = request.args.get('login_message', '')
+    start = int(start)
+    Step = 2                    # تعداد دکمه‌های صفحه‌بندی که نمایش داده می‌شه
+    per_page = 10               # تعداد توییت در هر صفحه (قابل تنظیم)
+
+    if current_user.is_authenticated:
+        # لیست ID کاربران فالو شده + خود کاربر
+        following_query = Following.query.filter_by(userid=current_user.id)
+        following_usersid = [f.following_userid for f in following_query] + [current_user.id]
+
+        # شمارش کل توییت‌ها (بهینه)
+        twitts_count = Twitts.query.filter(Twitts.userid.in_(following_usersid)).count()
+        retwitts_count = Retwitts.query.filter(Retwitts.userid.in_(following_usersid)).count()
+        TwittsNumber = twitts_count + retwitts_count
+
+        # دریافت توییت‌ها با joinedload برای جلوگیری از N+1
+        twittslist = Twitts.query.filter(Twitts.userid.in_(following_usersid)) \
+            .options(joinedload(Twitts.fk)) \
+            .order_by(desc(Twitts.dtime)) \
+            .offset(start * per_page).limit(per_page).all()
+
+        retwittslist = Retwitts.query.filter(Retwitts.userid.in_(following_usersid)) \
+            .options(joinedload(Retwitts.fk_userid), joinedload(Retwitts.fk_twittid)) \
+            .order_by(desc(Retwitts.dtime)) \
+            .offset(start * per_page).limit(per_page).all()
+
+        # اطلاعات فالو برای نمایش در صفحه
+        followersid = [f.userid for f in Following.query.filter_by(following_userid=current_user.id).all()]
+        followersfollowedid = [fid for fid in followersid 
+                              if Following.query.filter_by(userid=current_user.id, following_userid=fid).first()]
+        followingsid = [f.following_userid for f in Following.query.filter_by(userid=current_user.id).all()]
+
+    else:
+        # حالت بدون لاگین (همه توییت‌ها)
+        TwittsNumber = Twitts.query.count() + Retwitts.query.count()
+
+        twittslist = Twitts.query.options(joinedload(Twitts.fk)) \
+            .order_by(desc(Twitts.dtime)) \
+            .offset(start * per_page).limit(per_page).all()
+
+        retwittslist = Retwitts.query.options(joinedload(Retwitts.fk_userid), 
+                                            joinedload(Retwitts.fk_twittid)) \
+            .order_by(desc(Retwitts.dtime)) \
+            .offset(start * per_page).limit(per_page).all()
+
+        followersid = followersfollowedid = followingsid = None
+
+    # محاسبه تعداد صفحات
+    ButtonsNum = (TwittsNumber + per_page - 1) // per_page if TwittsNumber > 0 else 1
+
+    return render_template('twitts.html',
+                           twittslist=twittslist,
+                           retwittslist=retwittslist,
+                           start=start,
+                           ButtonsNum=ButtonsNum,
+                           Step=Step,
+                           TwittsNumber=TwittsNumber,
+                           TwittLike=TwittLike,
+                           Twitts=Twitts,
+                           User=User,
+                           datetime=datetime,
+                           login_message=login_message,
+                           following_users_number=len(following_usersid)-1 if current_user.is_authenticated else None,
+                           followed_users_number=len([f.following_userid for f in Following.query.filter_by(following_userid=current_user.id).all()]) if current_user.is_authenticated else None,
+                           followersid=followersid,
+                           followersfollowedid=followersfollowedid,
+                           followingsid=followingsid,
+                           abs=abs)
+
+
+@bp.route("/home/twitts/retwitt/",methods=['POST'])
+def ReTwitt():
+    retwitter_userid=current_user.id
+    twittid=request.form['twittid']
+    print("function is running..........................")
+    if (Retwitts.query.filter_by(userid=current_user.id)
+    .filter_by(twittid=twittid).first()):
+        message="You already retwitted this twitt.you can not retwitt a twitt twice. "
+        return jsonify({
+            'message':message
+        }) 
+    else:
+        retwitt=Retwitts(retwitter_userid,twittid)
+        try:
+            db.session.add(retwitt)
+            db.session.commit()
+        except BaseException as e:
+            return str(e)
+        else:
+            message='Retwitted for you XD'
+            return jsonify({
+                "message":message
+                
+            }) 
+
+
+
+
+@bp.route('/home/twitts/like_twitt/',methods=['POST'])
+def LikeTwitt():
+    if request.method=='POST':
+        userid=current_user.id
+        twittid=request.form['twittid']
+        twitt_likes_number=TwittLike.query.filter_by(twittid=twittid).count()
+        print(f'type of twittid is {type(twittid)}')
+        if TwittLike.query.filter_by(userid=current_user.id).filter_by(twittid=twittid).first():
+            twitt_unlike=TwittLike.query.filter_by(userid=current_user.id).filter_by(twittid=twittid).first()
+            try:
+                db.session.delete(twitt_unlike)
+                db.session.commit()
+            except BaseException as e:
+                return str(e)
+            else:
+                return jsonify({
+                    'message':"You  unliked this twitt","twitt_likes_number":twitt_likes_number-1,
+                    "twittid":twittid,
+                    'unliked':True,
+                    })
+        else:
+            twitt_like=TwittLike(userid, twittid)
+            try:
+                db.session.add(twitt_like)
+                db.session.commit()
+            except BaseException as e:
+                return str(e)
+            else:
+                return jsonify(
+                        {
+                        'message':"twitt Liked","twitt_likes_number":twitt_likes_number+1,
+                        "twittid":twittid,
+                        'unliked':False
+                        }
+                    )
+
+@bp.route("/home/twitts/twitt/<int:twittid>/likers/<string:username>/",methods=["GET"])
+@bp.route("/userpage/twitt/<int:twittid>/likers/<string:username>/",methods=["GET"])
+def TwittLikers(twittid=None,username=None):
+    if "twittid" in request.args and "username" in request.args:
+        twittid=request.args("twittid")
+        username=request.args("username")
+    elif twittid==None or username==None:
+        return jsonify({
+            "message":"twittid or username is empty"
+        })
+    user=User.query.filter_by(username=username).first()
+    twitt=Twitts.query.filter_by(id=twittid).first()
+    if not(user):
+        return jsonify({
+            "message":"User is not found by this username"
+        })
+    if not(twitt):
+        return jsonify({
+            "message":"User and Twitt is not matched"
+        })
+    TwLikers=TwittLike.query.filter_by(twittid=twitt.id).all()
+    if TwLikers:
+        TwLikers=[User.query.filter_by(id=twliker.userid).first() for twliker in TwLikers]
+        return render_template("TwittLikers.html",TwLikers=TwLikers)
+    return jsonify({
+        "message":"No one Liked this Twitt yet"
+    })
+        
+        
+
+    
+
+
+
+@bp.route('/home/twitts/see_comments/<int:twittid>/<int:start>',methods=['GET'])
+@bp.route('/home/twitts/see_comments/',methods=['GET'],defaults={'twittid':1,'start':0})
+def SeeComments(start,twittid):
+    start=int(start)
+    twittid=int(twittid)
+    CommentsNumber=Comments.query.filter_by(twittid=twittid).count() #Y
+    # ButtonsNum
+    flag=False 
+    ButtonsNum=2 
+    for i in range(1,10):
+        if CommentsNumber>1:
+            if CommentsNumber%i==0:
+                ButtonsNum=i
+                flag=True
+    if flag==False:
+        for i in range(10,CommentsNumber+1):
+            if CommentsNumber%i==0:
+                flag=True
+                ButtonsNum=i
+    #end ButtonsNum
+    print(f'CommentsNum={CommentsNumber} , ButtonsNum={ButtonsNum}')
+    Comments_perPage=int(CommentsNumber/ButtonsNum)
+    if Comments_perPage==0:#when CommentsNumber=1 and ButtonsNumber=2(by default)
+        Comments_perPage=1
+    Step=2
+    if start==ButtonsNum:
+        commentslist=Comments.query.filter_by(twittid=int(twittid)).all()[start*Comments_perPage:]
+    else:
+        commentslist=Comments.query.filter_by(twittid=twittid).all()[start*Comments_perPage:(start+1)*Comments_perPage]
+    
+    return render_template('comments.html',commentslist=commentslist,start=start,ButtonsNum=ButtonsNum,Step=Step,twittid=twittid,Comments_perPage=Comments_perPage,
+    CommentLike=CommentLike,CommentsNumber=CommentsNumber,User=User)
+
+
+@bp.route('/home/twitts/like_comment/',methods=['POST'])
+def LikeComment():
+    if request.method=='POST':
+        userid=current_user.id
+        twittid=request.form['twittid'] 
+        commentid=request.form['commentid']
+        comment_likes_number=CommentLike.query.filter_by(twittid=twittid).filter_by(commentid=commentid).count()
+        if CommentLike.query.filter_by(userid=userid).filter_by(commentid=commentid).first():
+            commentunlike=CommentLike.query.filter_by(userid=userid).filter_by(commentid=commentid).first()
+            try:
+                db.session.delete(commentunlike)
+                db.session.commit()
+            except BaseException as e:
+                return str(e)
+            else:
+                return jsonify(
+                    {
+                        'message':'u unliked this comment!',
+                        'comment_likes_number':comment_likes_number-1,
+                        'unliked':True
+                    }
+                )
+        comment_like=CommentLike(twittid,userid,commentid)
+        try:
+            db.session.add(comment_like)
+            db.session.commit()
+        except BaseException as e:
+            return str(e)
+        else:
+            return jsonify(
+                {
+                    'message':'you liked this comment!',
+                    'comment_likes_number':comment_likes_number+1,
+                    'unliked':False
+                }
+            )
+
+
+@bp.route('/home/twitts/see_comments/Likers/<int:twittid>/<int:commentid>',methods=['GET'])
+def CommentLikers(twittid=None,commentid=None):
+    if "twittid" in request.args and "commentid" in request.args:
+            twittid=request.args("twittid")
+            commentid=request.args("commentid")
+    elif twittid==None or commentid==None:
+        return jsonify({
+            "message":"twittid or commentid is missed."
+        })
+    twitt=Twitts.query.filter_by(id=twittid).first()
+    user=User.query.filter_by(id=twitt.userid).first()
+    comment=Comments.query.filter_by(id=commentid).first()
+    if not(user):
+        return jsonify({
+            "message":"User is not found"
+        })
+    if not(twitt):
+        return jsonify({
+            "message":"Twitt is not found"
+        })
+    if not(comment):
+        return jsonify({
+            "message":"Comment  is not found"
+        })
+        
+    ComLikers=CommentLike.query.filter_by(twittid=twitt.id).filter_by(commentid=commentid).all()
+    if ComLikers:
+        ComLikers=[User.query.filter_by(id=comliker.userid).first() for comliker in ComLikers]
+        return render_template("CommentLikers.html",ComLikers=ComLikers)
+    return jsonify({
+        "message":"No one liked this comment"
+    })
+
+
+@bp.route('/home/twitts/leave_comments/',methods=['POST'])
+def LeaveComment():
+    comment=Comments(request.form['twittid'],current_user.id,request.form['comment'])
+    db.session.add(comment)
+    db.session.commit()
+    return jsonify(
+        {'message':'commented'}
+    )
+
+@bp.route('/home/twitts/see_comment_replays/<int:commentid>',methods=['GET'])
+def SeeCommentReplays(commentid):
+    if "CommentReplayLiked_message" in request.args:
+        CommentReplayLiked_message=request.args['CommentReplayLiked_message']
+    else:
+        CommentReplayLiked_message=""
+    print(f'commentid={ commentid}')
+    commentreplays=CommentReplays.query.filter_by(commentid=commentid).all()
+    if commentreplays:
+        return render_template('CommentReplays.html',commentreplays=commentreplays,CommentReplaysLike=CommentReplaysLike,CommentReplayLiked_message=CommentReplayLiked_message,User=User)
+    return 'No replays on this comment'
+
+@bp.route('/home/twitts/leave_comment_replay/',methods=['POST'])
+def LeaveCommentReplay():
+    commentreplays=CommentReplays(current_user.id, request.form['twittid'],request.form['commentid'],request.form['replay'])
+    try:
+        db.session.add(commentreplays)
+        db.session.commit()
+    except BaseException as e:
+        return jsonify(
+        {
+            "message":str(e)
+        }
+        )
+    else:
+        return jsonify(
+            {
+                "message":"Replayed successfully:)"
+            }
+        )
+
+
+@bp.route('/home/twitts/see_comments/like_comment_replays/',methods=['POST'])
+def LikeCommentReplays():
+    comment_replay_id=request.form['comment_replay_id']
+    twittid=request.form['twittid']
+    commentid=request.form['commentid']
+    comment_replay_likes_number=CommentReplaysLike.query.filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).filter_by(twittid=twittid).count()
+    if CommentReplaysLike.query.filter_by(userid=current_user.id).filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).first():
+        unlikecomment=CommentReplaysLike.query.filter_by(userid=current_user.id).filter_by(commentid=commentid).filter_by(comment_replay_id=comment_replay_id).first()
+        try:
+            db.session.delete(unlikecomment)
+            db.session.commit()
+        except BaseException as e:
+            return str(e)
+        else:
+            return jsonify(
+                {
+                "message":"u unliked this replay.",
+                "comment_replay_id":comment_replay_id,
+                "comment_replay_likes_number":comment_replay_likes_number-1,
+                'unliked':True
+
+                }
+            )
+    commentreplayslike=CommentReplaysLike(current_user.id,
+    twittid,commentid,comment_replay_id)
+    try:
+        db.session.add(commentreplayslike)
+        db.session.commit()
+    except BaseException as e:
+        return str(e)
+    else:
+        return jsonify(
+            {
+               "message":"liked this replay",
+               "comment_replay_id":comment_replay_id,
+               "comment_replay_likes_number":comment_replay_likes_number+1,
+               'unliked':False
+            }
+        )
+
+
+
+
+
+@bp.route('/home/twitts/see_replay_on_replays/<int:twittid>/<int:id>/<int:comment_replay_id>/<int:request_from>',methods=['GET'])
+@bp.route('/home/twitts/see_replay_on_replays/',methods=['GET'],defaults={'twittid':1,'id':1,'comment_replay_id':1})
+def SeeReplayOnReplays(twittid,id,comment_replay_id,request_from):
+    if "replay_liked_message" in request.args:
+        replay_liked_message=request.args['replay_liked_message']
+    else:
+        replay_liked_message=""
+    if request_from==1:
+        replayonreplays=ReplayOnReplays.query.filter_by(replayid=id).filter_by(twittid=twittid).filter_by(comment_replay_id=comment_replay_id).filter_by(replaytable=True).all()
+    elif request_from==0:
+         replayonreplays=ReplayOnReplays.query.filter_by(replayid=id).filter_by(twittid=twittid).filter_by(comment_replay_id=comment_replay_id).filter_by(replaytable=False).all()
+
+
+    if replayonreplays:
+        return render_template('SeeReplayOnReplays.html',replayonreplays=replayonreplays,ReplaysOnReplayLikes=ReplaysOnReplayLikes,User=User)
+    return "No replays!"
+
+
+@bp.route('/home/twitts/see_replay_on_replays/likereplaysonreplay/',methods=['POST'])
+def LikeReplaysOnReplay():
+    comment_replay_id=request.form['comment_replay_id']
+    replaytable=bool(int(request.form['replaytable']))
+    replaysonreplaylikesnumber=ReplaysOnReplayLikes.query.filter_by(liked_replay_id=int(request.form['id'])).filter_by(comment_replay_id=
+    comment_replay_id).filter_by(replaytable=replaytable).count()
+
+    if ReplaysOnReplayLikes.query.filter_by(userid=current_user.id).filter_by(liked_replay_id=request.form['id']).filter_by(comment_replay_id=
+    comment_replay_id).filter_by(replaytable=replaytable).first():
+        unlikerp=ReplaysOnReplayLikes.query.filter_by(userid=current_user.id).filter_by(liked_replay_id=request.form['id']).filter_by(comment_replay_id=comment_replay_id).filter_by(replaytable=replaytable).first()
+        try:
+            db.session.delete(unlikerp)
+            db.session.commit()
+        except BaseException as e:
+            return str(e)
+        else:
+            return jsonify({
+                "message":"u unliked this replay!",
+                'replaysonreplaylikesnumber':replaysonreplaylikesnumber-1,
+                'id':request.form['id'],
+                'unliked':True
+            })
+    
+    likereplaysonreplay=ReplaysOnReplayLikes(current_user.id,int(request.form['twittid']),int(request.form['id']),request.form['comment_replay_id'],bool(int(request.form['replaytable'])))
+    try:
+        db.session.add(likereplaysonreplay)
+        db.session.commit()
+    except BaseException as e:
+        return str(e)
+
+    return jsonify({
+            "message":"u liked this replay!",
+            'replaysonreplaylikesnumber':replaysonreplaylikesnumber+1,
+            'id':request.form['id'],
+            'unliked':False
+        })
+    #------------------------------------------
+    #id=id is the id of the replay that the liked replay is replayed on
+   
+        
+
+
+@bp.route('/home/twitts/leave_replay_on_replays/',methods=['POST'])
+def Leave_Replay_On_Replays():
+    if ReplayOnReplays.query.count()==0:
+        Id=2
+    else:
+        Id=Id=ReplayOnReplays.query.order_by(desc("id")).first().id+1
+    if request.form['replaytable']=='1':
+        replayonreplays=ReplayOnReplays(Id,current_user.id,request.form['twittid'],request.form['id'],request.form['comment_replay_id'],True,request.form['replay'])
+    elif request.form['replaytable']=='0':
+        replayonreplays=ReplayOnReplays(Id,current_user.id,request.form['twittid'],request.form['id'],request.form['comment_replay_id'],False,request.form['replay'])
+    try:
+        db.session.add(replayonreplays)
+        db.session.commit()
+    except BaseException as e:
+        return jsonify({
+            'message':str(e)
+        })
+    else:
+        return jsonify({
+            'message':'well replied:)',
+        }) 
+
+
+@bp.route('/myip',methods=['GET'])
+def MyIp():
+    
+    return request.remote_addr,200
+
+
+@bp.route('/logout')
+def Logout():
+    logout_user()
+    return redirect(url_for('main.twitts'))
+
+
+
+@bp.route('/signup',methods=['POST','GET'])
+def Signup():
+    form=SignupForm()
+    if request.method=='POST':
+        if form.validate_on_submit():
+            username=form.username.data
+            # password=form.password.data
+            password=generate_password_hash(form.password.data)
+            email=form.email.data
+            user=User.query.filter_by(username=form.username.data).first()
+            if not(user):
+                try:
+                    user=User(username,password,email)
+                    db.session.add(user)
+                    db.session.commit()
+                    login_user(user)
+                except BaseException as e:
+                    return str(e)
+                else:
+                    return redirect(url_for('main.twitts'))
+            return "This username is already taken.try another."
+        else:
+            return str(form.errors)
+    elif request.method=='GET':
+        return render_template('signup.html',form=form)
+
+        
+
+@bp.route('/home/login',methods=['POST','GET'])
+def Login():
+    form=LoginForm()
+    if request.method=='POST':
+        if form.validate_on_submit():
+            username=form.username.data
+            password=form.password.data
+            # user=User.query.filter_by(username=username).filter_by(password=password).first()
+            user=User.query.filter_by(username=username).first()
+            if user:
+                if check_password_hash(user.password,password):
+                    login_user(user)
+                    return redirect(url_for('main.twitts'))
+                return "Wrong Password"
+            else:
+                return redirect(url_for('Login',message='No user matches taken username and password. \n try again. '))
+        return str(form.errors)
+    elif request.method=='GET':
+        message=''
+        if current_user.is_authenticated:
+            return redirect(url_for('main.twitts',login_message="You're already logged in.first logout then try to login via other account"))
+        if 'message' in request.args:
+            message=request.args['message']
+        return render_template('login.html',message=message,form=form)
+
+
+@bp.route('/home/login/forgetpassword/',methods=["GET","POST"])
+def ForgetPassword():
+    form=ForgetPasswordForm()
+    if request.method=="GET":
+        if current_user.is_authenticated:
+            return jsonify({
+                "message":"You are already a user.log out to login twice!"
+            })
+        return render_template("forgetpassword.html",form=form)
+    elif request.method=="POST":
+        if form.validate_on_submit():
+            username=form.username.data
+            user=User.query.filter_by(username=username).first()
+            if user:
+                emailAddress=user.email
+                session["verification"]={}
+                session["verification"]["verificationCode"]=[str(random.randint(0,9)) for i in range(4)]
+                session["verification"]["verificationCode"]="".join(session["verification"]["verificationCode"])
+                session["verification"]["emailAddress"]=emailAddress
+                mailVerCode(emailAddress,session["verification"]["verificationCode"])
+                return redirect(url_for("main.ResetPassword"))
+            else:
+                return jsonify({
+                    "message":"User is not found"
+                })
+        else:
+            return str(form.errors)
+@bp.route('/home/login/forgetpassword/resetpassword',methods=['GET','POST'])
+def ResetPassword():
+    form=ResetPasswordForm()
+    if request.method=='GET':
+        if current_user.is_authenticated:
+            return jsonify({
+                "message":"You are already a user.log out to login twice!"
+            })
+        else:
+            if not("verification" in session):
+                return redirect(url_for('ForgetPassword'))
+            else:
+                return render_template('reset-password.html',form=form)
+    elif request.method=='POST':
+        if form.validate_on_submit():
+            if session["verification"]["verificationCode"]==form.verificationCode.data:
+                User.query.filter_by(email=session["verification"]["emailAddress"]).first().password=form.newPassword.data
+                del session["verification"]
+                return jsonify({
+                    "message":"Password is Changed!"
+                })
+            else:
+                del session["verification"]
+                return redirect(url_for("main.ForgetPassword"))
+
+
+@bp.route('/home/twitts/direct/<string:reciever_id>',methods=['GET'])
+@bp.route('/home/twitts/direct',methods=['GET'],defaults={'reciever_id':None})
+@bp.route('/home/twitts/direct',methods=['POST'])
+def Direct(reciever_id=None): #Need to be None to handle Post method otherwise we got positional argument error
+    if current_user.is_authenticated:
+        if request.method=='POST':
+            reciever_id=request.form['reciever_id']
+            message=request.form['message']
+            dm=DirectMessages(current_user.id, reciever_id, message)
+           # return reciever_id
+            try:
+                db.session.add(dm)
+                db.session.commit()
+            except BaseException as e:
+                return str(e)
+            else:
+                return redirect(url_for('Direct',reciever_id=reciever_id))
+        elif request.method == 'GET':
+            if reciever_id is None:
+                if 'reciever_id' in request.args:
+                    reciever_id = request.args['reciever_id']
+                else:
+                    return redirect(url_for('main.twitts'))
+            # elif reciever_id==current_user.id:
+            #         return "You  can not send message to yourself! this option will be comming  soon."
+            ############ set unread=False
+            unread_messages = DirectMessages.query.filter_by(
+        reciever_id=current_user.id, 
+        sender_id=reciever_id
+    ).filter_by(unread=True).all()
+    
+        for unmsg in unread_messages:
+            unmsg.unread = False
+            db.session.commit()
+
+    # دریافت پیام‌ها
+        dms = DirectMessages.query.filter(
+            ((DirectMessages.reciever_id == reciever_id) & (DirectMessages.sender_id == current_user.id)) |
+            ((DirectMessages.reciever_id == current_user.id) & (DirectMessages.sender_id == reciever_id))
+        ).order_by(DirectMessages.dtime).all()
+
+        return render_template('directpage.html', 
+                               reciever_id=reciever_id, 
+                               dms=dms, 
+                               User=User)
+    return 'You should login first.'
+
+
+@bp.route('/userpage/<string:username>/followers/',methods=['GET'])
+def Followers(username=None):
+        user=User.query.filter_by(username=username).first()
+        if user:
+            if username==None:
+                if "username" in request.args:
+                    username=request.args["username"]
+            followers_id=[follower.userid for follower in Following.query.filter_by(following_userid=user.id).all()]
+            followersfollowed_id=[followerid for followerid in followers_id if Following.query.filter_by(following_userid=followerid).filter_by(userid=user.id).first()]
+            followersnotfollowed_id=list(set(followers_id)-set(followersfollowed_id))
+            return render_template("followers_list.html",Following=Following,User=User,user=user,followersfollowed_id=followersfollowed_id,followersnotfollowed_id=followersnotfollowed_id)
+        return "User not found"
+
+@bp.route('/user/<string:username>/followings/',methods=['GET'])
+def Followings(username=None):
+        user=User.query.filter_by(username=username).first()
+        if user:
+            if username==None:
+                if "username" in request.args:
+                    username=request.args["username"]
+            followings_id=[following.following_userid for following in Following.query.filter_by(userid=user.id).all()]
+            return render_template("followings_list.html",Following=Following,User=User,user=user,followings_id=followings_id)
+        return "User not found"
+
+
+
+@bp.route('/home/twitts/follow/',methods=['POST'])
+def Follow():
+    if request.method=='POST':
+        if current_user.is_authenticated:
+            followingtarget_id=request.form['followingtarget_id']
+            follower_id=request.form['follower_id']
+            if followingtarget_id==current_user.id:
+                return jsonify({
+                    'message':'You can not follow yourself'
+                })
+            if Following.query.filter_by(userid=follower_id).filter_by(following_userid=followingtarget_id).first():
+                return jsonify({
+                    'message':"you've followed this user before.",
+                })
+            else:
+                follow=Following(follower_id,followingtarget_id)
+                if follow:
+                    try:
+                        db.session.add(follow)
+                        db.session.commit()
+                    except BaseException as e:
+                        return jsonify({
+                            'message':f'error:{e}'
+                        })
+                    else:
+                        if "followersOrfollowingsPage" in request.args:
+                            if request.args["followersOrfollowingsPage"]=="Followers":
+                                return redirect(url_for("main.Followers",userid=current_user.id))
+                            elif request.args["followersOrfollowingsPage"]=="Followings":
+                                return redirect(url_for("main.Followings",userid=current_user.id))
+                        else:
+                            return redirect(url_for("main.userPage",username=User.query.filter_by(id=followingtarget_id).first().username))
+                return jsonify({
+                    'message':f'Something Went Wrong'
+                })
+
+@bp.route('/home/twitts/unfollow/',methods=['POST'])
+def UnFollow():
+    if request.method=='POST':
+        if current_user.is_authenticated:
+            unfollowingtarget_id=request.form['unfollowingtarget_id']
+            unfollower_id=request.form['unfollower_id']
+            unfollow=Following.query.filter_by(userid=unfollower_id).filter_by(following_userid=unfollowingtarget_id).first()
+            if unfollow:
+                try:
+                    db.session.delete(unfollow)
+                    db.session.commit()
+                except BaseException as e:
+                    return jsonify({
+                        'message':f'error:{e}'
+                    })
+                else:
+                    if "followersOrfollowingsPage" in request.args:
+                        if request.args["followersOrfollowingsPage"]=="Followers":
+                            return redirect(url_for("main.Followers",username=current_user.username))
+                        elif request.args["followersOrfollowingsPage"]=="Followings":
+                            return redirect(url_for("main.Followings",username=current_user.username))
+                    else:
+                        return redirect(url_for("main.userPage",username=User.query.filter_by(id=unfollowingtarget_id).first().username))
+            else:
+                return jsonify({
+                    'message':f'Something Went Wrong'
+                })
+
+
+
+
+
+@bp.route('/home/twitts/search-user/',methods=['GET'])
+def Search():
+    username=request.args.get('searcheduser')
+    user=User.query.filter_by(username=username).first()
+    if not(user):
+        return "Not found any user"
+    return render_template('searched_users.html',user=user,Following=Following)
+
+admin.add_view(ModelView(User, db.session))
+admin.add_view(ModelView(Twitts, db.session))
+admin.add_view(ModelView(Comments,db.session))
+admin.add_view(ModelView(CommentReplays,db.session))
+admin.add_view(ModelView(ReplayOnReplays,db.session))
+admin.add_view(ModelView(TwittLike,db.session))
+admin.add_view(ModelView(DirectMessages,db.session))
+admin.add_view(ModelView(CommentLike,db.session))
+admin.add_view(ModelView(Following,db.session))
+admin.add_view(ModelView(Retwitts,db.session))
+admin.add_view(ModelView(CommentReplaysLike,db.session))
+admin.add_view(ModelView(ReplaysOnReplayLikes,db.session))
+admin.add_view(ModelView(ProfilePhotos,db.session))
+
+
+
+    
+if __name__ == '__main__':
+    app.run(debug=True)

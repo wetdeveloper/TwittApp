@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}توییتر من{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <style>
+        body { font-family: 'Tahoma', system-ui, sans-serif; }
+        .tweet-card { transition: all 0.2s; }
+        .tweet-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navbar حرفه‌ای -->
+    {% block navbar %}
+    <nav class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <a href="{{ url_for('main.twitts') }}" class="flex items-center gap-2 text-2xl font-bold">
+                    <i class="fa-solid fa-dove"></i>
+                    <span>توییتر</span>
+                </a>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.userPage', username=current_user.username) }}" 
+                       class="flex items-center gap-2 hover:bg-white/20 px-4 py-2 rounded-full transition">
+                        <i class="fa-solid fa-user"></i>
+                        <span>{{ current_user.username }}</span>
+                    </a>
+                    <a href="{{ url_for('main.Logout') }}" 
+                       class="hover:bg-red-500 px-5 py-2 rounded-full transition">خروج</a>
+                {% else %}
+                    <a href="{{ url_for('main.Signup') }}" class="hover:bg-white/20 px-5 py-2 rounded-full transition">ثبت‌نام</a>
+                    <a href="{{ url_for('main.Login') }}" class="bg-white text-blue-600 px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition">ورود</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    {% endblock %}
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block scripts %}
+        {{ moment.include_moment() if moment is defined else '' }}
+    {% endblock %}
+
+    <script>
+        // Tailwind Script + CSRF
+        tailwind.config = { content: ["*"] };
+        
+        $(document).ready(function(){
+            var csrftoken = $('meta[name=csrf-token]').attr('content');
+            $.ajaxSetup({
+                beforeSend: function(xhr) {
+                    if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(xhr.type)) {
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                    }
+                }
+            });
+        });
+    </script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+
