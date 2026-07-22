@@ -1,65 +1,77 @@
 from app import *
 from Model import *
-from tools import MessedTwittList,MessedRetwittList
+from tools import get_messed_twitts, get_messed_retwitts
+from sqlalchemy import desc
+from sqlalchemy.orm import joinedload
 from Forms import *
 from forgetpassVerification import *
+
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(user_id)
 
 
-@app.route('/userpage/<string:username>/', methods=["GET"], endpoint='userPage')
-@app.route('/userpage/', methods=["GET"], endpoint='userPage')
+@app.route('/userpage/<string:username>/', methods=["GET"])
+@app.route('/userpage/', methods=["GET"])
 def userPage(username=None):
     ProfPicUpForm = ProfPicUploadForm()
-    
-    if username is None:
+
+    if not username:
         username = request.args.get("username")
         if not username:
             return redirect(url_for("twitts"))
-    
+
+    # کوئری اصلی کاربر + اطلاعات پروفایل
     user = User.query.filter_by(username=username).first()
     if not user:
         return "There isn't any user by this username."
 
-    # === توییت‌ها و ریتوییت‌ها ===
-    twitts = Twitts.query.filter_by(userid=user.id).order_by(Twitts.dtime.desc()).all()
-    retwitts = []
-    for ret in Retwitts.query.filter_by(userid=user.id).order_by(Retwitts.dtime.desc()).all():
-        original = Twitts.query.get(ret.twittid)
-        if original:
-            retwitts.append(original)
+    # شمارش‌های بهینه (بدون لوپ اضافی)
+    followed_users_number = Following.query.filter_by(following_userid=user.id).count()   # فالوورها
+    following_users_number = Following.query.filter_by(userid=user.id).count()          # فالوئینگ‌ها
 
-    # Unread messages
+    # توییت‌های کاربر
+    twitts = Twitts.query.filter_by(userid=user.id)\
+        .options(joinedload(Twitts.fk))\
+        .order_by(desc(Twitts.dtime)).all()
+
+    # ری‌توییت‌ها
+    retwitts = db.session.query(Twitts)\
+        .join(Retwitts, Twitts.id == Retwitts.twittid)\
+        .filter(Retwitts.userid == user.id)\
+        .options(joinedload(Twitts.fk))\
+        .order_by(desc(Retwitts.dtime)).all()
+
+    # اطلاعات پیام‌های خوانده‌نشده (فقط برای کاربر فعلی)
+    unread_messages_number = 0
+    unread_messages_senders = []
     if current_user.is_authenticated:
-        unread_messages_senders = [dm.sender_id for dm in DirectMessages.query.filter_by(
-            reciever_id=current_user.id, unread=True).all()]
-        unread_messages_number = DirectMessages.query.filter_by(
-            reciever_id=current_user.id, unread=True).count()
-    else:
-        unread_messages_senders = []
-        unread_messages_number = 0
+        unread_query = DirectMessages.query.filter_by(
+            reciever_id=current_user.id, 
+            unread=True
+        )
+        unread_messages_number = unread_query.count()
+        unread_messages_senders = [dm.sender_id for dm in unread_query.all()]
 
-    following_users_number = Following.query.filter_by(userid=user.id).count()
-    followed_users_number = Following.query.filter_by(following_userid=user.id).count()
-
+    # آدرس عکس پروفایل
     ProfPhoAdd = f'/ProfilePhotos/{user.id}.jpg' if ProfilePhotos.query.filter_by(userid=user.id).first() else None
 
     return render_template("user_page.html",
-        user=user,
-        twitts=twitts,
-        retwitts=retwitts,
-        unread_messages_senders=unread_messages_senders,
-        unread_messages_number=unread_messages_number,
-        followed_users_number=followed_users_number,
-        following_users_number=following_users_number,
-        TwittLike=TwittLike,
-        Following=Following,
-        User=User,
-        ProfPicUpForm=ProfPicUpForm,
-        ProfPhoAdd=ProfPhoAdd
-    )
+                           user=user,
+                           twitts=twitts,
+                           retwitts=retwitts,
+                           unread_messages_senders=unread_messages_senders,
+                           unread_messages_number=unread_messages_number,
+                           DirectMessages=DirectMessages,
+                           followed_users_number=followed_users_number,
+                           following_users_number=following_users_number,
+                           TwittLike=TwittLike,
+                           Following=Following,
+                           User=User,
+                           ProfPicUpForm=ProfPicUpForm,
+                           ProfPhoAdd=ProfPhoAdd,
+                           len=len)
 
 
 @app.route('/UploadProfilePicture',methods=['POST'])
@@ -108,84 +120,77 @@ def TwittIt():
                 )
 
 
-@app.route('/home/twitts/<int:start>',methods=['GET'])
-@app.route('/home/twitts/',defaults={'start':0},methods=['GET'])
+@app.route('/home/twitts/<int:start>', methods=['GET'])
+@app.route('/home/twitts/', defaults={'start': 0}, methods=['GET'])
 def twitts(start):
-    login_message=''
-    if 'login_message' in request.args:
-        login_message=request.args['login_message']
-    start=int(start)
-    ##############################TwittsNumber and Twitts List
-    if current_user.is_authenticated:
-        following_usersid=[user.following_userid for user in Following.query.filter_by(userid=current_user.id).all()]+[current_user.id] #users that you followed them # we add the current_user too cuz we will output the current_user twitts too.
-        followed_usersid=[user.following_userid for user in Following.query.filter_by(following_userid=current_user.id).all()]#users that  followed you
-        try:
-            twittslist=MessedTwittList(following_usersid)
-        except BaseException as e:
-            return str(e)
-        retwittslist=MessedRetwittList(following_usersid)
-        TwittsNumber=len(twittslist)+len(retwittslist)
-        following_usersid.remove(current_user.id) 
-        
-        followersid=[follower.userid for follower in Following.query.filter_by(following_userid=current_user.id).all()]#using for followers list
-        followersfollowedid=[followerid for followerid in followersid if Following.query.filter_by(userid=current_user.id).filter_by(following_userid=followerid).first()]#using for followers list
-        followingsid=[following.following_userid for following in Following.query.filter_by(userid=current_user.id).all()] #using for followinglist
-    else:
-        twittslist=MessedTwittList()
-        retwittslist=MessedRetwittList()
-        TwittsNumber=len(twittslist)+len(retwittslist)
-        followersid=None
-        followersfollowedid=None
-        followingsid=None
-    ############################# end TwittsNumber and Twitts List
-    flag=False
-    ButtonsNum=2 
-    if 'TwittsNumber' and 'ButtonsNum' in app.config:
-        if app.config['TwittsNumber']!=TwittsNumber:
-            for i in range(1,10):
-                if TwittsNumber>=i:
-                    if TwittsNumber%i==0:
-                        ButtonsNum=i
-                        flag=True
-            if flag==False:
-                for i in range(10,TwittsNumber+1):
-                    if TwittsNumber%i==0:
-                        flag=True
-                        ButtonsNum=i
-            app.config['TwittsNumber']=TwittsNumber
-            app.config['ButtonsNum']=ButtonsNum
-        elif app.config['TwittsNumber']==TwittsNumber:
-            TwittsNumber=app.config['TwittsNumber']
-            ButtonsNum=app.config['ButtonsNum']
-    elif not('TwittsNumber' and 'ButtonsNum' in app.config):
-        for i in range(1,10):
-            if TwittsNumber>=i:
-                if TwittsNumber%i==0:
-                    ButtonsNum=i
-                    flag=True
-            if flag==False:
-                for i in range(10,TwittsNumber+1):
-                    if TwittsNumber%i==0:
-                        flag=True
-                        ButtonsNum=i
-    #end ButtonsNum
-    Twitts_perPage=int(TwittsNumber/ButtonsNum) #TwittsNumber=len(twittlist)+len(retwittslist)
-    if Twitts_perPage==0:#when CommentsNumber=1 and ButtonsNumber=2(by default)
-        Twitts_perPage=1
-    Retwitts_perPage=Twitts_perPage
-    Step=2
-    if start==ButtonsNum:
-        twittslist=twittslist[start*Twitts_perPage:]
-        retwittslist=retwittslist[start*Retwitts_perPage:]
-    else:
-        twittslist=twittslist[start*Twitts_perPage:(start+1)*Twitts_perPage]
-        retwittslist=retwittslist[start*Retwitts_perPage:(start+1)*Retwitts_perPage]
-    return render_template('twitts.html',twittslist=twittslist,start=start,ButtonsNum=ButtonsNum,login_message=login_message,
-   Step=Step,TwittLike=TwittLike,DirectMessages=DirectMessages,
-   Twitts_perPage=Twitts_perPage,TwittsNumber=TwittsNumber,following_users_number=len(following_usersid) if current_user.is_authenticated else None
-   ,followed_users_number=len(followed_usersid ) if current_user.is_authenticated else None , retwittslist=retwittslist,Twitts=Twitts,abs=abs,datetime=datetime,
-   followingsid=followingsid,followersfollowedid=followersfollowedid,followersid=followersid,User=User)
+    login_message = request.args.get('login_message', '')
+    start = int(start)
+    Step = 2                    # تعداد دکمه‌های صفحه‌بندی که نمایش داده می‌شه
+    per_page = 10               # تعداد توییت در هر صفحه (قابل تنظیم)
 
+    if current_user.is_authenticated:
+        # لیست ID کاربران فالو شده + خود کاربر
+        following_query = Following.query.filter_by(userid=current_user.id)
+        following_usersid = [f.following_userid for f in following_query] + [current_user.id]
+
+        # شمارش کل توییت‌ها (بهینه)
+        twitts_count = Twitts.query.filter(Twitts.userid.in_(following_usersid)).count()
+        retwitts_count = Retwitts.query.filter(Retwitts.userid.in_(following_usersid)).count()
+        TwittsNumber = twitts_count + retwitts_count
+
+        # دریافت توییت‌ها با joinedload برای جلوگیری از N+1
+        twittslist = Twitts.query.filter(Twitts.userid.in_(following_usersid)) \
+            .options(joinedload(Twitts.fk)) \
+            .order_by(desc(Twitts.dtime)) \
+            .offset(start * per_page).limit(per_page).all()
+
+        retwittslist = Retwitts.query.filter(Retwitts.userid.in_(following_usersid)) \
+            .options(joinedload(Retwitts.fk_userid), joinedload(Retwitts.fk_twittid)) \
+            .order_by(desc(Retwitts.dtime)) \
+            .offset(start * per_page).limit(per_page).all()
+
+        # اطلاعات فالو برای نمایش در صفحه
+        followersid = [f.userid for f in Following.query.filter_by(following_userid=current_user.id).all()]
+        followersfollowedid = [fid for fid in followersid 
+                              if Following.query.filter_by(userid=current_user.id, following_userid=fid).first()]
+        followingsid = [f.following_userid for f in Following.query.filter_by(userid=current_user.id).all()]
+
+    else:
+        # حالت بدون لاگین (همه توییت‌ها)
+        TwittsNumber = Twitts.query.count() + Retwitts.query.count()
+
+        twittslist = Twitts.query.options(joinedload(Twitts.fk)) \
+            .order_by(desc(Twitts.dtime)) \
+            .offset(start * per_page).limit(per_page).all()
+
+        retwittslist = Retwitts.query.options(joinedload(Retwitts.fk_userid), 
+                                            joinedload(Retwitts.fk_twittid)) \
+            .order_by(desc(Retwitts.dtime)) \
+            .offset(start * per_page).limit(per_page).all()
+
+        followersid = followersfollowedid = followingsid = None
+
+    # محاسبه تعداد صفحات
+    ButtonsNum = (TwittsNumber + per_page - 1) // per_page if TwittsNumber > 0 else 1
+
+    return render_template('twitts.html',
+                           twittslist=twittslist,
+                           retwittslist=retwittslist,
+                           start=start,
+                           ButtonsNum=ButtonsNum,
+                           Step=Step,
+                           TwittsNumber=TwittsNumber,
+                           TwittLike=TwittLike,
+                           Twitts=Twitts,
+                           User=User,
+                           datetime=datetime,
+                           login_message=login_message,
+                           following_users_number=len(following_usersid)-1 if current_user.is_authenticated else None,
+                           followed_users_number=len([f.following_userid for f in Following.query.filter_by(following_userid=current_user.id).all()]) if current_user.is_authenticated else None,
+                           followersid=followersid,
+                           followersfollowedid=followersfollowedid,
+                           followingsid=followingsid,
+                           abs=abs)
 
 
 @app.route("/home/twitts/retwitt/",methods=['POST'])

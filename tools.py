@@ -1,55 +1,37 @@
-from app import *
-from Model import *
-
-def MessedTwittList(following_users=None):
-    if current_user.is_authenticated:
-        if not(following_users):
-            return AssertionError('Empty following user')
-        else:
-            following_users=following_users
-    else:
-        following_users=[user.id for user in User.query.all()]
-    twittslist=[Twitts.query.filter_by(userid=fuser).all() for fuser in following_users]#مانند یک ماتریس با این لیست رفتار میکنیم ،ستونهای سطر شامل توییت های یک یوزر است یعنی هر سطر متعلق به یک یوزر است
-    new_twittlist=list()
-    while True:
-        count=0
-        for i in range(0,len(twittslist)):
-            if len(twittslist[i])==0:
-                count+=1
-                continue
-            new_twittlist.append(twittslist[i][0])
-            del twittslist[i][0]
-        if count==len(twittslist):
-            break
-    return new_twittlist
+# tools.py
+from app import db
+from Model import Twitts, Retwitts, User, Following
+from sqlalchemy.orm import joinedload
+from sqlalchemy import desc
 
 
+def get_messed_twitts(following_usersid=None, limit=None, offset=0):
+    if following_usersid is None:
+        following_usersid = [user.id for user in User.query.all()]
+    
+    query = Twitts.query.filter(Twitts.userid.in_(following_usersid)) \
+        .options(joinedload(Twitts.fk)) \
+        .order_by(desc(Twitts.dtime))
+    
+    if limit:
+        query = query.limit(limit)
+    if offset:
+        query = query.offset(offset)
+    
+    return query.all()
 
 
-
-def MessedRetwittList(following_usersid=None):
-    if current_user.is_authenticated:
-        if not(following_usersid):
-            return AssertionError('Empty following user')
-        else:
-            following_usersid=following_usersid
-    else:
-        following_usersid=[user.id for user in User.query.all()]
-    retwittslist=[Retwitts.query.filter_by(userid=fuserid).all() for fuserid in following_usersid]#مانند یک ماتریس با این لیست رفتار میکنیم ،ستونهای سطر شامل توییت های یک یوزر است یعنی هر سطر متعلق به یک یوزر است
-    new_retwittslist=list()
-    while True:
-        count=0
-        for i in range(0,len(retwittslist)):
-            if len(retwittslist[i])==0:
-                count+=1
-                continue
-            new_retwittslist.append(retwittslist[i][0])
-            del retwittslist[i][0]
-        if count==len(retwittslist):
-            break
-    return new_retwittslist
-
-
-
-            
-  
+def get_messed_retwitts(following_usersid=None, limit=None, offset=0):
+    if following_usersid is None:
+        following_usersid = [user.id for user in User.query.all()]
+    
+    query = Retwitts.query.filter(Retwitts.userid.in_(following_usersid)) \
+        .options(joinedload(Retwitts.fk_userid), joinedload(Retwitts.fk_twittid)) \
+        .order_by(desc(Retwitts.dtime))
+    
+    if limit:
+        query = query.limit(limit)
+    if offset:
+        query = query.offset(offset)
+    
+    return query.all()
