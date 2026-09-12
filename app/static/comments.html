@@ -22,7 +22,7 @@
             <div class="flex-1">
                 <!-- User Info -->
                 <div class="flex items-center justify-between">
-                    <a href="{{ url_for('main.userPage', username=User.query.filter_by(id=comment.userid).first().username) }}" 
+                    <a href="{{ url_for('users.userPage', username=User.query.filter_by(id=comment.userid).first().username) }}" 
                        class="font-bold text-xl hover:underline">
                         {{ User.query.filter_by(id=comment.userid).first().username }}
                     </a>
@@ -57,14 +57,14 @@
                     {% endif %}
 
                     <!-- Likers -->
-                    <a href="{{ url_for('main.CommentLikers', commentid=comment.id, twittid=comment.twittid) }}" 
+                    <a href="{{ url_for('comments.CommentLikers', commentid=comment.id, twittid=comment.twittid) }}" 
                        class="flex items-center gap-2 hover:text-blue-600 transition">
                         <i class="fa-solid fa-users"></i>
                         <span>Likers</span>
                     </a>
 
                     <!-- See Replays -->
-                    <a href="{{ url_for('main.SeeCommentReplays', commentid=comment.id) }}" 
+                    <a href="{{ url_for('comments.SeeCommentReplays', commentid=comment.id) }}" 
                        class="flex items-center gap-2 hover:text-purple-600 transition">
                         <i class="fa-regular fa-comment-dots"></i>
                         <span>ریپلای‌ها</span>
@@ -109,19 +109,19 @@
     <div class="flex justify-center gap-3 mt-12">
         {% if CommentsNumber > 0 %}
             {% if start > 0 %}
-                <a href="{{ url_for('main.SeeComments', twittid=twittid, start=start-1) }}" 
+                <a href="{{ url_for('comments.SeeComments', twittid=twittid, start=start-1) }}" 
                    class="px-6 py-3 bg-white border rounded-2xl hover:bg-gray-100">قبلی</a>
             {% endif %}
 
             {% for i in range(0, ButtonsNum) %}
-                <a href="{{ url_for('main.SeeComments', twittid=twittid, start=i) }}" 
+                <a href="{{ url_for('comments.SeeComments', twittid=twittid, start=i) }}" 
                    class="px-6 py-3 rounded-2xl transition {{ 'bg-blue-600 text-white' if i == start else 'bg-white border hover:bg-gray-100' }}">
                     {{ i + 1 }}
                 </a>
             {% endfor %}
 
             {% if start < ButtonsNum - 1 %}
-                <a href="{{ url_for('main.SeeComments', twittid=twittid, start=start+1) }}" 
+                <a href="{{ url_for('comments.SeeComments', twittid=twittid, start=start+1) }}" 
                    class="px-6 py-3 bg-white border rounded-2xl hover:bg-gray-100">بعدی</a>
             {% endif %}
         {% endif %}

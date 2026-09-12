@@ -24,7 +24,7 @@ from ..forgetpassVerification import *
 @auth_bp.route('/logout')
 def Logout():
     logout_user()
-    return redirect(url_for('main.twitts'))
+    return redirect(url_for('tweets.twitts'))
 
 
 @auth_bp.route('/signup', methods=['POST', 'GET'])
@@ -48,7 +48,7 @@ def Signup():
                 except BaseException as e:
                     return str(e)
                 else:
-                    return redirect(url_for("main.twitts"))
+                    return redirect(url_for("tweets.twitts"))
 
             return "This username is already taken.try another."
 
@@ -67,7 +67,7 @@ def Login():
             if user:
                 if check_password_hash(user.password,password):
                     login_user(user)
-                    return redirect(url_for('main.twitts'))
+                    return redirect(url_for('tweets.twitts'))
                 return "Wrong Password"
             else:
                 return redirect(url_for('auth.Login',message='No user matches taken username and password. \n try again. '))
@@ -75,7 +75,7 @@ def Login():
     elif request.method=='GET':
         message=''
         if current_user.is_authenticated:
-            return redirect(url_for('main.twitts',login_message="You're already logged in.first logout then try to login via other account"))
+            return redirect(url_for('tweets.twitts',login_message="You're already logged in.first logout then try to login via other account"))
         if 'message' in request.args:
             message=request.args['message']
         return render_template('login.html',message=message,form=form)

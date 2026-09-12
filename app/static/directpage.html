@@ -4,7 +4,7 @@
     </head>
     <body>
         <!-- send messages -->
-            <form action="{{url_for('main.Direct')}}" method="post">
+            <form action="{{url_for('messages.Direct')}}" method="post">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="hidden" name='reciever_id' value="{{reciever_id}}">
                 <button type="submit">send</button><input type="text" name="message">

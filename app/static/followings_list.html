@@ -23,7 +23,7 @@
                         <h3>
                         {{User.query.filter_by(id=following_id).first().username}}
                             {%if current_user.id==user.id%}
-                                <form action="{{url_for('main.UnFollow',followersOrfollowingsPage='Followings')}}" method="post">
+                                <form action="{{url_for('social.UnFollow',followersOrfollowingsPage='Followings')}}" method="post">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <input type="hidden" name="unfollower_id" value={{current_user.id}}>
                                     <input type="hidden" name="unfollowingtarget_id" value={{following_id}}>

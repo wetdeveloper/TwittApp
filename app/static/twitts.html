@@ -42,7 +42,7 @@
     <div class="bg-white rounded-3xl shadow-lg mb-8 p-6 hover:shadow-2xl transition-all">
         <div class="flex gap-4">
             <!-- Avatar -->
-            <a href="{{ url_for('main.userPage', username=User.query.filter_by(id=twitt.userid).first().username) }}">
+            <a href="{{ url_for('users.userPage', username=User.query.filter_by(id=twitt.userid).first().username) }}">
                 <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-inner">
                     {{ User.query.filter_by(id=twitt.userid).first().username[:1].upper() }}
                 </div>
@@ -51,7 +51,7 @@
             <div class="flex-1">
                 <!-- User Info -->
                 <div class="flex items-center justify-between">
-                    <a href="{{ url_for('main.userPage', username=User.query.filter_by(id=twitt.userid).first().username) }}" 
+                    <a href="{{ url_for('users.userPage', username=User.query.filter_by(id=twitt.userid).first().username) }}" 
                        class="font-bold text-xl hover:underline">
                         {{ User.query.filter_by(id=twitt.userid).first().username }}
                     </a>
@@ -66,7 +66,7 @@
                 <!-- Actions Bar -->
                 <div class="flex items-center justify-between mt-6 pt-6 border-t text-gray-500">
                     <!-- Direct -->
-                    <a href="{{ url_for('main.Direct', reciever_id=twitt.userid) }}" 
+                    <a href="{{ url_for('messages.Direct', reciever_id=twitt.userid) }}" 
                        class="flex items-center gap-2 hover:text-blue-600 transition-colors">
                         <i class="fa-solid fa-paper-plane"></i>
                     </a>
@@ -91,7 +91,7 @@
                     {% endif %}
 
                     <!-- Comments -->
-                    <a href="{{ url_for('main.SeeComments', twittid=twitt.id, start=0) }}" 
+                    <a href="{{ url_for('comments.SeeComments', twittid=twitt.id, start=0) }}" 
                        class="flex items-center gap-2 hover:text-blue-600 transition-colors">
                         <i class="fa-regular fa-comment-dots"></i>
                         <span>کامنت</span>
@@ -131,7 +131,7 @@
             <i class="fa-solid fa-retweet"></i> Retweeted
         </p>
         <div class="flex gap-4">
-            <a href="{{ url_for('main.userPage', username=User.query.filter_by(id=retwitt.userid).first().username) }}">
+            <a href="{{ url_for('users.userPage', username=User.query.filter_by(id=retwitt.userid).first().username) }}">
                 <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-white font-bold">
                     {{ User.query.filter_by(id=retwitt.userid).first().username[:1].upper() }}
                 </div>
@@ -166,7 +166,7 @@
             
             <!-- Previous -->
             {% if start > 0 %}
-            <a href="{{ url_for('main.twitts', start=start-1) }}" 
+            <a href="{{ url_for('tweets.twitts', start=start-1) }}" 
                class="px-5 py-3 bg-white border rounded-xl hover:bg-gray-100 transition">
                 قبلی
             </a>
@@ -174,7 +174,7 @@
 
             <!-- Page Numbers -->
             {% for i in range(0, ButtonsNum) %}
-                <a href="{{ url_for('main.twitts', start=i) }}" 
+                <a href="{{ url_for('tweets.twitts', start=i) }}" 
                    class="px-5 py-3 rounded-xl transition {{ 'bg-blue-600 text-white' if i == start else 'bg-white border hover:bg-gray-100' }}">
                     {{ i + 1 }}
                 </a>
@@ -182,7 +182,7 @@
 
             <!-- Next -->
             {% if start < ButtonsNum - 1 %}
-            <a href="{{ url_for('main.twitts', start=start+1) }}" 
+            <a href="{{ url_for('tweets.twitts', start=start+1) }}" 
                class="px-5 py-3 bg-white border rounded-xl hover:bg-gray-100 transition">
                 بعدی
             </a>

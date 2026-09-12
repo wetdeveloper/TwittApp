@@ -36,7 +36,7 @@
         </div>
         <div class="col-4">
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('main.Direct', reciever_id=user.id) }}" 
+                <a href="{{ url_for('messages.Direct', reciever_id=user.id) }}" 
                    class="btn btn-primary btn-lg">
                     <i class="fas fa-paper-plane"></i> 
                     {% if current_user.id == user.id %}
@@ -75,7 +75,7 @@
                 <span id="twitt_likes_number_{{ twitt.id }}" class="ms-2 fs-5">{{ TwittLike.query.filter_by(twittid=twitt.id).count() }}</span>
                 {% endif %}
                
-                <a href="{{ url_for('main.SeeComments', twittid=twitt.id, start=0) }}" class="btn btn-sm btn-success ms-3">Comments</a>
+                <a href="{{ url_for('comments.SeeComments', twittid=twitt.id, start=0) }}" class="btn btn-sm btn-success ms-3">Comments</a>
             </div>
         </div>
     {% else %}

@@ -32,7 +32,7 @@ def create_app():
 
     db.init_app(app)
     login_manager.init_app(app)
-    login_manager.login_view = "login"
+    login_manager.login_view = "auth.Login"
 
     bootstrap.init_app(app)
     moment.init_app(app)
@@ -44,10 +44,23 @@ def create_app():
     with app.app_context():
         from . import Model
 
-    from .routes import main_bp, auth_bp
+    from .routes import (
+    auth_bp,
+    users_bp,
+    tweets_bp,
+    comments_bp,
+    social_bp,
+    messages_bp,
+    misc_bp,
+)
     print("Routes imported successfully")
-    app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(users_bp)
+    app.register_blueprint(tweets_bp)
+    app.register_blueprint(comments_bp)
+    app.register_blueprint(social_bp)
+    app.register_blueprint(messages_bp)
+    app.register_blueprint(misc_bp)
     # admin.init_app(app)
 
     return app

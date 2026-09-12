@@ -51,7 +51,7 @@
                     {% endif %}
 
                     <!-- See Replays -->
-                    <a href="{{ url_for('main.SeeReplayOnReplays', id=replay.id, twittid=replay.twittid, comment_replay_id=replay.comment_replay_id, request_from=0) }}" 
+                    <a href="{{ url_for('comments.SeeReplayOnReplays', id=replay.id, twittid=replay.twittid, comment_replay_id=replay.comment_replay_id, request_from=0) }}" 
                        class="flex items-center gap-2 hover:text-indigo-600 transition">
                         <i class="fa-solid fa-comments"></i>
                         <span>ریپلای‌ها</span>
