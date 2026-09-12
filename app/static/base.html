@@ -41,11 +41,11 @@
                         <i class="fa-solid fa-user"></i>
                         <span>{{ current_user.username }}</span>
                     </a>
-                    <a href="{{ url_for('main.Logout') }}" 
+                    <a href="{{ url_for('auth.Logout') }}" 
                        class="hover:bg-red-500 px-5 py-2 rounded-full transition">خروج</a>
                 {% else %}
-                    <a href="{{ url_for('main.Signup') }}" class="hover:bg-white/20 px-5 py-2 rounded-full transition">ثبت‌نام</a>
-                    <a href="{{ url_for('main.Login') }}" class="bg-white text-blue-600 px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition">ورود</a>
+                    <a href="{{ url_for('auth.Signup') }}" class="hover:bg-white/20 px-5 py-2 rounded-full transition">ثبت‌نام</a>
+                    <a href="{{ url_for('auth.Login') }}" class="bg-white text-blue-600 px-6 py-2 rounded-full font-semibold hover:bg-gray-100 transition">ورود</a>
                 {% endif %}
             </div>
         </div>

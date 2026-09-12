@@ -12,7 +12,7 @@
 
     </head>
     <body>
-        <form action="{{url_for('main.Signup')}}" method="post">
+        <form action="{{url_for('auth.Signup')}}" method="post">
             <div class="row">
                 <div class="col-12 mt-4">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>                    

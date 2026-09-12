@@ -44,9 +44,10 @@ def create_app():
     with app.app_context():
         from . import Model
 
-    from . import routes
+    from .routes import main_bp, auth_bp
     print("Routes imported successfully")
-    app.register_blueprint(routes.bp)
+    app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
     # admin.init_app(app)
 
     return app
