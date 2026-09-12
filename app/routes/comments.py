@@ -211,7 +211,8 @@ def LikeCommentReplays():
             }
         )
 
-@comments_bp.route('/home/twitts/see_replay_on_replays/',methods=['GET'],defaults={'twittid':1,'id':1,'comment_replay_id':1})
+@comments_bp.route('/home/twitts/see_replay_on_replays/<int:twittid>/<int:id>/<int:comment_replay_id>/<int:request_from>', methods=['GET'])
+@comments_bp.route('/home/twitts/see_replay_on_replays/', methods=['GET'], defaults={'twittid':1,'id':1,'comment_replay_id':1,'request_from':0})
 def SeeReplayOnReplays(twittid,id,comment_replay_id,request_from):
     if "replay_liked_message" in request.args:
         replay_liked_message=request.args['replay_liked_message']
